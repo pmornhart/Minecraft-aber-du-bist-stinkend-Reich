@@ -1,0 +1,42 @@
+# 0.4.9: Bodyguards fahren mit und schießen aus dem Auto; James fährt „nach Hause“ bis vor die Haustür, dann in die Garage.
+# Weltkoordinaten = Villa + (-56, 62, -56). Aufruf: tools/ingame/test.sh 26.3 tools/ingame/szenarien/runde049.txt
+warte 30
+server /gamemode creative @p
+server /time set 6000
+server /gamerule advance_time false
+server /difficulty easy
+merke anfang
+bis 900 Straße Mine: Ende
+# --- Bodyguards im Auto ---
+server /butler strassenpunkt 0 60
+warte 4
+server /execute at @p run summon stinkendreich:stretchlimo ~ ~ ~
+warte 1
+server /ride @p mount @e[type=stinkendreich:stretchlimo,limit=1,sort=nearest]
+server /item replace entity @p weapon.mainhand with stinkendreich:handy
+server /handy bodyguards|rufen
+warte 6
+server /execute at @p run summon minecraft:zombie ~10 ~ ~6 {PersistenceRequired:1b}
+merke
+bis 20 Bodyguard .* zielt auf
+taste F5
+warte 1
+bild w01_bodyguards_im_auto
+warte 3
+bild w02_bodyguards_schiessen
+taste F5
+warte 1
+taste F5
+server /kill @e[type=minecraft:zombie]
+# --- Nach Hause: James fährt bis vor die Haustür ---
+merke
+server /handy fahr|#villa
+bis 300 Wir sind da|sind angekommen|steht bereit
+warte 3
+server /execute at @e[type=stinkendreich:stretchlimo,limit=1,sort=nearest] run tp @p ~ ~ ~
+bild w03_vor_der_haustuer
+server /ride @p dismount
+server /tp @p -0.5 82 18 facing -0.5 78 10
+merke
+bis 120 Garage: STRETCHLIMO eingeparkt
+bild w04_limo_in_garage

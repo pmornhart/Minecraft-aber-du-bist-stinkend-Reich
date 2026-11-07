@@ -353,9 +353,9 @@ public final class ButlerBefehle {
                         : de.moinmornhart.stinkendreich.strasse.Strassennetz.villaName(eigene);
             } else {
                 var villa = de.moinmornhart.stinkendreich.villa.VillaPlatzierung.villa();
-                // Der Hubschrauber landet auf dem Landeplatz, das Auto hält vor dem Haus
-                BlockPos heim = villa.map(v -> fliegen ? v.landeplatz() : v.spawn()).orElse(b.heimat());
-                punkt = Vec3.atBottomCenterOf(heim);
+                // Der Hubschrauber landet auf dem Landeplatz, das Auto hält vor der Haustür (danach fährt James in die Garage)
+                punkt = villa.map(v -> fliegen ? Vec3.atBottomCenterOf(v.landeplatz())
+                        : de.moinmornhart.stinkendreich.butler.auftrag.FahrAuftrag.vorDerTuer(v)).orElse(Vec3.atBottomCenterOf(b.heimat()));
                 name = Component.translatable("stinkendreich.butler.fahren.villa").getString();
             }
             antwort = Antwort.ok("stinkendreich.butler." + art + ".heim");
@@ -367,7 +367,7 @@ public final class ButlerBefehle {
                 punkt = Vec3.atBottomCenterOf(v.landeplatz());
                 name = Component.translatable("stinkendreich.strasse.ziel.villa", herr).getString();
             } else if (v.nr() == 0) {
-                punkt = Vec3.atBottomCenterOf(v.spawn());
+                punkt = de.moinmornhart.stinkendreich.butler.auftrag.FahrAuftrag.vorDerTuer(v);
                 name = Component.translatable("stinkendreich.butler.fahren.villa").getString();
             } else {
                 punkt = de.moinmornhart.stinkendreich.strasse.Strassennetz.villaZiel((net.minecraft.server.level.ServerLevel) p.level(), v);

@@ -11,6 +11,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
@@ -104,7 +105,7 @@ public class BodyguardEntity extends IronGolem {
             @Override
             public boolean canUse() {
                 LivingEntity z = getTarget();
-                return z != null && !(z instanceof Creeper) && distanceTo(z) < NAHKAMPF_AB && super.canUse();
+                return !isPassenger() && z != null && !(z instanceof Creeper) && distanceTo(z) < NAHKAMPF_AB && super.canUse();
             }
 
             @Override
@@ -169,13 +170,17 @@ public class BodyguardEntity extends IronGolem {
                 setTarget(neu);
             }
         }
+        if (tickCount % 10 == 5) {
+            mitfahren();
+        }
         LivingEntity ziel = getTarget();
         boolean zielen = false, nah = false;
         if (ziel != null && ziel.isAlive()) {
             double d = distanceTo(ziel);
-            zielen = (d > SCHUSS_AB || ziel instanceof Creeper) && d < SCHUSS_BIS && hasLineOfSight(ziel);
+            // Im Auto wird nur geschossen (auch auf nahe Gegner), Nahkampf gibt es erst nach dem Aussteigen
+            zielen = (d > SCHUSS_AB || ziel instanceof Creeper || isPassenger()) && d < SCHUSS_BIS && hasLineOfSight(ziel);
             // Pistole weg, sobald es in den Nahkampf geht (wie das Nahkampf-Goal: Creeper nie)
-            nah = !zielen && !(ziel instanceof Creeper) && d < (nahkampf() ? NAHKAMPF_BIS : NAHKAMPF_AB);
+            nah = !zielen && !isPassenger() && !(ziel instanceof Creeper) && d < (nahkampf() ? NAHKAMPF_BIS : NAHKAMPF_AB);
         }
         if (nahkampf() != nah) {
             entityData.set(NAHKAMPF, nah);
@@ -224,12 +229,36 @@ public class BodyguardEntity extends IronGolem {
     }
 
     /**
+     * Mitfahren (Philip, 07.11.: „dass die Bodyguards auch wirklich in Autos sitzen können und mich vom Auto aus
+     * verteidigen“): Sitzt der Chef in einem Wagen oder Hubschrauber mit freiem Platz, steigt der Bodyguard dazu und schießt
+     * während der Fahrt aus dem Wagen auf Gegner. Steigt der Chef aus, steigt er auch aus und stellt sich neben ihn.
+     */
+    private void mitfahren() {
+        ServerPlayer c = chefOnline();
+        Entity wagen = c == null ? null : c.getVehicle();
+        if (wagen instanceof de.moinmornhart.stinkendreich.auto.AutoEntity auto && c.level() == level()) {
+            if (getVehicle() != auto && auto.getPassengers().size() < auto.art.sitze.length && distanceToSqr(auto) < 32 * 32) {
+                stopRiding();
+                getNavigation().stop();
+                setTarget(null);
+                de.moinmornhart.stinkendreich.Kompat.einsteigen(this, auto);
+            }
+        } else if (getVehicle() instanceof de.moinmornhart.stinkendreich.auto.AutoEntity) {
+            stopRiding();
+            if (c != null && c.level() == level()) {
+                Vec3 frei = Bodyguards.freieStelle((ServerLevel) level(), this, c, c.getYRot() + 180);
+                teleportTo(frei.x, frei.y, frei.z);
+            }
+        }
+    }
+
+    /**
      * Steckt er in einer Wand oder kommt seit vier Sekunden nicht voran, obwohl der Chef weiter weg ist (z. B. hinter
      * einer Tür, die ein Golem nicht öffnen kann), steht er gleich wieder an einer freien Stelle neben dem Chef.
      */
     private void feststeckenPruefen() {
         ServerPlayer c = chefOnline();
-        if (c == null || c.level() != level()) {
+        if (c == null || c.level() != level() || isPassenger()) {
             return;
         }
         boolean steht = letzteStelle != null && letzteStelle.distanceToSqr(position()) < 0.25;
@@ -305,7 +334,7 @@ public class BodyguardEntity extends IronGolem {
         public boolean canUse() {
             ServerPlayer c = chefOnline();
             double weit = zielt() ? 12 : 6;
-            return c != null && c.level() == level() && distanceToSqr(c) > weit * weit;
+            return !isPassenger() && c != null && c.level() == level() && distanceToSqr(c) > weit * weit;
         }
 
         @Override

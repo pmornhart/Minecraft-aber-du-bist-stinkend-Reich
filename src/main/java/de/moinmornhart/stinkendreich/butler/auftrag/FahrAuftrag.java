@@ -247,6 +247,10 @@ public class FahrAuftrag extends Auftrag {
             weg.add(Vec3.atBottomCenterOf(v.weltPos(TOR_X, y, VOR_DER_BRUECKE_Z)));
             weg.add(Vec3.atBottomCenterOf(v.weltPos(TOR_X, y, HINTER_DEM_TOR_Z)));
         }
+        // Hält der Wagen vor der Haustür: erst zurück auf den Teppich vor dem Tor (zwischen den Beeten und Brunnen hindurch)
+        if (aufDemGrundstueck(v, start) && start.z - v.ursprung().getZ() < 90) {
+            weg.add(Vec3.atBottomCenterOf(v.weltPos(TOR_X, y, 92)));
+        }
         // Zufahrt zur Garage (Bogen um 80/88), Garagentor, Rampe hinunter (Bauplan: villa.py, Tiefgarage)
         double rampeX = 87.0, rampeOben = 66.5;
         int unten = y;
@@ -318,7 +322,7 @@ public class FahrAuftrag extends Auftrag {
         if (zielAufDemGrundstueck()) {
             List<Vec3> heim = netz.routeHeim(start);
             if (heim == null) {
-                return null;
+                return null;     // weit weg vom Netz: route() fährt außen um das Grundstück herum
             }
             weg.addAll(heim);
             weg.add(aussen);
@@ -345,6 +349,13 @@ public class FahrAuftrag extends Auftrag {
 
     /** Einfahrt der Villa (Strukturkoordinaten): vor der Brücke und hinter dem Tor, mittig auf dem roten Teppich. */
     private static final double TOR_X = 55.5, VOR_DER_BRUECKE_Z = 117.5, HINTER_DEM_TOR_Z = 95.5;
+    /** Wo der Wagen „zu Hause“ hält: auf dem Teppich vor der Haustür (Tür bei z 67), zwischen Beeten und Brunnen. */
+    public static final double VOR_DER_TUER_Z = 72.5;
+
+    /** Haltepunkt vor der Haustür einer Villa (Weltkoordinaten). */
+    public static Vec3 vorDerTuer(de.moinmornhart.stinkendreich.villa.VillaPlatzierung.VillaInfo v) {
+        return Vec3.atBottomCenterOf(v.weltPos(TOR_X, v.plan().bodenY + 1, VOR_DER_TUER_Z));
+    }
 
     /**
      * Weg zum Ziel: Liegt genau eines von Start und Ziel auf dem Villa-Grundstück, geht es über die Brücke
@@ -363,7 +374,48 @@ public class FahrAuftrag extends Auftrag {
         int y = v.plan().bodenY + 1;
         Vec3 aussen = Vec3.atBottomCenterOf(v.weltPos(TOR_X, y, VOR_DER_BRUECKE_Z));
         Vec3 innen = Vec3.atBottomCenterOf(v.weltPos(TOR_X, y, HINTER_DEM_TOR_Z));
-        return startDrin ? List.of(innen, aussen, ziel) : List.of(aussen, innen, ziel);
+        List<Vec3> weg = new java.util.ArrayList<>();
+        if (startDrin) {
+            weg.add(innen);
+            weg.add(aussen);
+            weg.addAll(umfahren(v, aussen, ziel));
+        } else {
+            weg.addAll(umfahren(v, start, aussen));
+            weg.add(aussen);
+            weg.add(innen);
+        }
+        weg.add(ziel);
+        return weg;
+    }
+
+    /** Abstand der Umfahrung vom Grundstück (Graben, Mauer, Minengürtel liegen dazwischen). */
+    private static final double UMFAHRUNG = 16;
+
+    /**
+     * Wegpunkte, die von {@code von} nach {@code nach} außen um das Grundstück herumführen statt quer hindurch (Philip,
+     * 07.11.: James fuhr ihn auf dem Heimweg geradewegs in den Graben). Erst seitlich am Grundstück vorbei, dann vor
+     * die Südseite, wo Brücke und Tor liegen.
+     */
+    private static List<Vec3> umfahren(de.moinmornhart.stinkendreich.villa.VillaPlatzierung.VillaInfo v, Vec3 von, Vec3 nach) {
+        double x0 = v.ursprung().getX() - UMFAHRUNG, x1 = v.ursprung().getX() + v.plan().breiteX + UMFAHRUNG;
+        double z0 = v.ursprung().getZ() - UMFAHRUNG, z1 = v.ursprung().getZ() + v.plan().breiteZ + UMFAHRUNG;
+        List<Vec3> weg = new java.util.ArrayList<>();
+        // Liegt die Strecke vor der Südseite, ist nichts zu tun
+        if (von.z >= z1 - UMFAHRUNG / 2 && nach.z >= z1 - UMFAHRUNG / 2) {
+            return weg;
+        }
+        Vec3 aussenSeite = von.z >= z1 - UMFAHRUNG / 2 ? nach : von;
+        double seiteX = aussenSeite.x < (x0 + x1) / 2 ? x0 : x1;
+        double y = v.ursprung().getY() + v.plan().bodenY + 1;
+        Vec3 seiteNord = new Vec3(seiteX, y, Math.max(z0, Math.min(z1, aussenSeite.z))), seiteSued = new Vec3(seiteX, y, z1);
+        if (von == aussenSeite) {
+            weg.add(seiteNord);
+            weg.add(seiteSued);
+        } else {
+            weg.add(seiteSued);
+            weg.add(seiteNord);
+        }
+        return weg;
     }
 
     private static boolean aufDemGrundstueck(de.moinmornhart.stinkendreich.villa.VillaPlatzierung.VillaInfo v, Vec3 p) {
