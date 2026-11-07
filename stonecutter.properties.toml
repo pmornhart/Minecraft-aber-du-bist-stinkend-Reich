@@ -3,7 +3,7 @@
 mod.id = "stinkendreich"
 mod.name = "Stinkend Reich"
 mod.group = "de.moinmornhart"
-mod.version = "0.4.8"
+mod.version = "0.4.9"
 
 deps.fabric_loader = "0.20.1"
 # Anthropic-Bibliothek für den Claude-Butler (Version 2.x, siehe docs/BAUPLAN.md)
