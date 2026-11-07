@@ -809,7 +809,7 @@ Werkzeug: `scratchpad/seite_daten.py` anpassen, `seite_neu.py seite_daten.json`,
 
 ## Nächster Schritt
 
-**Release 0.4.9 angestoßen** (07.11. nach Philips „auf auf“): Luxus-Treppen (Quarz/Gold, `Treppenbau.STIL` 2 überbaut alte), Bodyguards fahren mit (`BodyguardEntity.mitfahren`, schießen aus dem Wagen, kein Nahkampf als Mitfahrer), Heimfahrt bis vor die Haustür (`FahrAuftrag.vorDerTuer`, `umfahren` außen ums Grundstück, Heimweg zur Garage über den Teppich). Tests `treppe049.txt`, `runde049.txt`; Testhilfe `/butler treppenblick <ziel> <anteil>`.
+**Release 0.4.9 veröffentlicht** (07.11. 20:00 nach Philips „auf auf“, Lauf 42403170224, 17 Dateien + +alle.jar: https://github.com/pmornhart/Minecraft-aber-du-bist-stinkend-Reich/releases/tag/v0.4.9): Luxus-Treppen (Quarz/Gold, `Treppenbau.STIL` 2 überbaut alte), Bodyguards fahren mit (`BodyguardEntity.mitfahren`, schießen aus dem Wagen, kein Nahkampf als Mitfahrer), Heimfahrt bis vor die Haustür (`FahrAuftrag.vorDerTuer`, `umfahren` außen ums Grundstück, Heimweg zur Garage über den Teppich). Tests `treppe049.txt`, `runde049.txt`; Testhilfe `/butler treppenblick <ziel> <anteil>`.
 
 **Release 0.4.8 veröffentlicht** (07.11. 18:41 nach Philips „naus“ = Release raus, Lauf 42396626798): 17 Mod-Dateien + `stinkendreich-0.4.8+alle.jar` (109 MB): https://github.com/pmornhart/Minecraft-aber-du-bist-stinkend-Reich/releases/tag/v0.4.8. Die Sammel-Datei aus dem Release startet auf Fabric-Servern 1.21.1 und 26.3 mit der jeweils passenden Fassung. Offen: Philips Test von Twitch, Pfeilern und Tänzerinnen in seiner Welt; Server ohne Mod für 1.21–1.21.5.
 
