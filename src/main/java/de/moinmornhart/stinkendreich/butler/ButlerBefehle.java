@@ -132,6 +132,19 @@ public final class ButlerBefehle {
                                     StringArgumentType.getString(k, "aktion"), wagen.art.name, wagen.blockPosition().toShortString(), wagen.verschlossen());
                             return 1;
                         })))
+                        // Testhilfe: auf eine Treppe stellen („/butler treppenblick mine 0“ = oben am Tor, 1 = unten)
+                        .then(Commands.literal("treppenblick").then(Commands.argument("ziel", StringArgumentType.word())
+                                .then(Commands.argument("anteil", com.mojang.brigadier.arguments.DoubleArgumentType.doubleArg(0, 1)).executes(k -> {
+                            ServerPlayer p = k.getSource().getPlayerOrException();
+                            double[] t = de.moinmornhart.stinkendreich.strasse.Strassennetz.get(k.getSource().getServer())
+                                    .treppenBlick(StringArgumentType.getString(k, "ziel"), com.mojang.brigadier.arguments.DoubleArgumentType.getDouble(k, "anteil"));
+                            if (t == null) {
+                                return 0;
+                            }
+                            de.moinmornhart.stinkendreich.Kompat.befehl(k.getSource().getServer(), String.format(java.util.Locale.ROOT,
+                                    "tp %s %.2f %.2f %.2f facing %.2f %.2f %.2f", p.getScoreboardName(), t[0], t[1], t[2], t[3], t[4], t[5]));
+                            return 1;
+                        }))))
                         // Testhilfe: vor einen Wegweiser stellen („/butler wegweiser 0“ = der große an der Zufahrt)
                         .then(Commands.literal("wegweiser").then(Commands.argument("nr", com.mojang.brigadier.arguments.IntegerArgumentType.integer(0)).executes(k -> {
                             ServerPlayer p = k.getSource().getPlayerOrException();

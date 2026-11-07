@@ -59,6 +59,8 @@ public final class Strassennetz {
     private StrassenBau bau;
     /** Treppe vom Straßenende hinunter ins Ziel (Mine, Endportal, Netherportal), die gerade entsteht. */
     private Treppenbau treppe;
+    /** Fertige Treppen dieser Sitzung je Ziel („mine“, „endportal“ …), nur für die Testhilfe /butler treppenblick. */
+    private final Map<String, Treppenbau> gebauteTreppen = new java.util.HashMap<>();
     /** Straßen, deren Treppe fertig ist (oder die keine brauchen). */
     private final java.util.Set<String> treppenFertig = new java.util.HashSet<>();
 
@@ -406,7 +408,7 @@ public final class Strassennetz {
     private boolean naechsteTreppe() {
         for (Strasse st : strassen) {
             String art = Wegweiser.festesZiel(st.name());
-            if (art != null && !art.equals("dorf") && !treppenFertig.contains(st.name()) && !st.punkte().isEmpty()) {
+            if (art != null && !art.equals("dorf") && !treppenFertig.contains(st.name() + "@" + Treppenbau.STIL) && !st.punkte().isEmpty()) {
                 treppe = new Treppenbau(server.overworld(), st.name(), art, st.ende());
                 return true;
             }
@@ -420,7 +422,8 @@ public final class Strassennetz {
         }
         treppe.tick();
         if (treppe.fertig()) {
-            treppenFertig.add(treppe.name);
+            treppenFertig.add(treppe.name + "@" + Treppenbau.STIL);
+            gebauteTreppen.put(treppe.art, treppe);
             treppe = null;
             speichern();
         }
@@ -636,6 +639,12 @@ public final class Strassennetz {
 
     private final Strassenkehrer kehrer = new Strassenkehrer();
     private final Wegweiser wegweiser = new Wegweiser();
+
+    /** Testhilfe: Standort und Blickpunkt auf der zuletzt gebauten Treppe (siehe {@link Treppenbau#blick}). */
+    public double[] treppenBlick(String art, double anteil) {
+        Treppenbau t = gebauteTreppen.get(art);
+        return t == null ? null : t.blick(anteil);
+    }
 
     /** Testhilfe: Standort und Blickpunkt vor dem Wegweiser {@code nr} (siehe {@link Wegweiser#blick}). */
     public double[] wegweiserBlick(int nr) {

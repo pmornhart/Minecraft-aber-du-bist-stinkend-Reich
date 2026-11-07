@@ -23,20 +23,21 @@ import java.util.List;
  * Tick): beim Minenschacht eine Schiene oder ein Holzzaun im Gang, bei der Festung das Endportal (sonst ein Gang aus
  * Steinziegeln), beim Netherportal der Portalblock. Dann entsteht Stufe für Stufe ein zwei Blöcke breiter, drei Blöcke
  * hoher Treppengang aus Steinziegeltreppen: erst in Richtung Ziel, und wenn es mehr in die Tiefe als in die Weite geht, als
- * eckige Wendeltreppe. Wände und Decke werden nur dort gemauert, wo Luft, Wasser, Lava, Sand oder Kies wären; alle fünf
- * Stufen ein Seelaterne in der Decke. Spielerbauten, Truhen und Villen werden nie angefasst.</p>
+ * eckige Wendeltreppe – im Luxus-Stil aus Quarz und Gold (siehe {@link #stufeBauen}). Spielerbauten, Truhen, Portale und
+ * Villen werden nie angefasst.</p>
  */
 final class Treppenbau {
     /** So weit um das Straßenende wird das Ziel gesucht (Blöcke, waagerecht). */
     static final int SUCHE = 40;
     /** Stufen je Tick. */
     private static final int JE_TICK = 6;
-    private static final BlockState WAND = Blocks.STONE_BRICKS.defaultBlockState();
-    private static final BlockState LICHT = Blocks.SEA_LANTERN.defaultBlockState();
+    private static final BlockState LICHT = Blocks.OCHRE_FROGLIGHT.defaultBlockState();
+    /** Stil der Treppen: ändert er sich, werden schon gebaute Treppen im neuen Stil überbaut. */
+    static final int STIL = 2;
 
     private final ServerLevel welt;
     final String name;
-    private final String art;
+    final String art;
     private final BlockPos start;
     private final List<long[]> chunks = new ArrayList<>();
     private int chunkIndex;
@@ -67,6 +68,21 @@ final class Treppenbau {
         // nahe Chunks zuerst
         chunks.sort(java.util.Comparator.comparingLong(c -> (c[0] - (ende.getX() >> 4)) * (c[0] - (ende.getX() >> 4))
                 + (c[1] - (ende.getZ() >> 4)) * (c[1] - (ende.getZ() >> 4))));
+    }
+
+    /**
+     * Testhilfe: Blick auf die Treppe bei {@code anteil} (0 = oben am Tor, 1 = unten) – Standort zwei Stufen davor
+     * (eine Stufe höher), Blick die Treppe hinunter. x, y, z, Blickziel x, y, z oder null.
+     */
+    double[] blick(double anteil) {
+        if (stufen == null || stufen.size() < 4) {
+            return null;
+        }
+        int i = Math.max(2, Math.min(stufen.size() - 2, (int) Math.round(anteil * (stufen.size() - 1))));
+        BlockPos a = stufen.get(i - 2), b = stufen.get(i + 1);
+        Direction q = richtungen.get(i).getClockWise();
+        return new double[]{a.getX() + 0.5 + q.getStepX() * 0.5, a.getY() + 0.6, a.getZ() + 0.5 + q.getStepZ() * 0.5,
+                b.getX() + 0.5 + q.getStepX() * 0.5, b.getY() + 0.4, b.getZ() + 0.5 + q.getStepZ() * 0.5};
     }
 
     boolean fertig() {
@@ -211,6 +227,11 @@ final class Treppenbau {
 
     // ---------------- Bauen ----------------
 
+    /**
+     * Eine Stufe im Luxus-Stil (Philip, 07.11.: „luxuriös, mit Gold und so“): Stufen aus weißem Marmor (glatter Quarz),
+     * Wände aus Quarzziegeln mit goldener Sockelleiste, Decke aus glattem Quarz mit goldenen Lichtern (Ocker-Froschlicht)
+     * alle vier Stufen; oben am offenen Einschnitt nur eine Brüstung (Gold + Quarz). Am Straßenende ein goldenes Tor.
+     */
     private void stufeBauen(int i) {
         BlockPos c = stufen.get(i);
         Direction r = richtungen.get(i);
@@ -220,49 +241,60 @@ final class Treppenbau {
         for (int w = -1; w <= 2; w++) {
             BlockPos f = c.relative(quer, w);
             boolean imGang = w == 0 || w == 1;
+            boolean himmel = offenZumHimmel(f.above(3));
             for (int h = -1; h <= 3; h++) {
                 BlockPos p = f.above(h);
-                if (!darf(p)) {
+                if (!darf(p) || (h >= 0 && gang.contains(p.asLong())) || (h == -1 && imGang && gang.contains(p.asLong()))) {
                     continue;
                 }
                 if (imGang && h == -1) {
-                    // Boden: Treppenstufe (geht in Gegenrichtung hinauf) bzw. Steinziegel
-                    if (gang.contains(p.asLong())) {
-                        continue;
-                    }
-                    setzen(p, runter ? Blocks.STONE_BRICK_STAIRS.defaultBlockState().setValue(StairBlock.FACING, r.getOpposite()) : WAND);
+                    setzen(p, runter ? Blocks.SMOOTH_QUARTZ_STAIRS.defaultBlockState().setValue(StairBlock.FACING, r.getOpposite())
+                            : Blocks.SMOOTH_QUARTZ.defaultBlockState());
                 } else if (imGang && h <= 2) {
                     setzen(p, Blocks.AIR.defaultBlockState());
                 } else if (imGang) {
-                    // Decke: Licht alle fünf Stufen, sonst nur abdichten
-                    if (w == 0 && i % 5 == 2 && !offenZumHimmel(p) && !gang.contains(p.asLong())) {
-                        setzen(p, LICHT);
-                    } else {
-                        abdichten(p);
+                    if (!himmel) {
+                        setzen(p, w == 0 && i % 4 == 2 ? LICHT : Blocks.SMOOTH_QUARTZ.defaultBlockState());
                     }
-                } else {
-                    abdichten(p);
+                } else if (h <= 0) {
+                    // Wand unten: goldene Sockelleiste (darunter Quarz als Fundament)
+                    setzen(p, h == 0 ? Blocks.GOLD_BLOCK.defaultBlockState() : Blocks.SMOOTH_QUARTZ.defaultBlockState());
+                } else if (!himmel) {
+                    setzen(p, h == 3 ? Blocks.SMOOTH_QUARTZ.defaultBlockState() : Blocks.QUARTZ_BRICKS.defaultBlockState());
+                } else if (h == 1) {
+                    setzen(p, Blocks.QUARTZ_SLAB.defaultBlockState());     // Brüstung am offenen Einschnitt
                 }
             }
-            // unter der Stufe kein Loch (Höhlen): eine Lage Steinziegel
+            // unter der Stufe kein Loch (Höhlen)
             BlockPos drunter = f.below(2);
-            if (imGang && darf(drunter) && welt.getBlockState(drunter).isAir()) {
-                setzen(drunter, WAND);
+            if (darf(drunter) && welt.getBlockState(drunter).isAir()) {
+                setzen(drunter, Blocks.SMOOTH_QUARTZ.defaultBlockState());
             }
+        }
+        if (i == 0) {
+            tor(c, quer);
         }
     }
 
-    /** Nur Luft, Flüssigkeit und rieselnde Blöcke werden zur Wand; Erz und Stein bleiben. */
-    private void abdichten(BlockPos p) {
-        if (gang.contains(p.asLong())) {
-            return;
+    /** Goldenes Eingangstor über der ersten Stufe: zwei Säulen, Sturz aus Gold und gemeißeltem Quarz, Laternen obenauf. */
+    private void tor(BlockPos c, Direction quer) {
+        for (int w : new int[]{-1, 2}) {
+            for (int h = 0; h <= 3; h++) {
+                BlockPos p = c.relative(quer, w).above(h);
+                if (darf(p)) {
+                    setzen(p, h == 3 ? Blocks.CHISELED_QUARTZ_BLOCK.defaultBlockState() : Blocks.GOLD_BLOCK.defaultBlockState());
+                }
+            }
+            BlockPos laterne = c.relative(quer, w).above(5);
+            if (darf(laterne) && welt.getBlockState(laterne).isAir()) {
+                setzen(laterne, Blocks.LANTERN.defaultBlockState());
+            }
         }
-        BlockState s = welt.getBlockState(p);
-        if (offenZumHimmel(p) && s.isAir()) {
-            return;     // oben im offenen Einschnitt keine Decke über die Treppe
-        }
-        if (s.isAir() || !s.getFluidState().isEmpty() || s.getBlock() instanceof net.minecraft.world.level.block.FallingBlock) {
-            setzen(p, WAND);
+        for (int w = -1; w <= 2; w++) {
+            BlockPos p = c.relative(quer, w).above(4);
+            if (darf(p)) {
+                setzen(p, w == -1 || w == 2 ? Blocks.CHISELED_QUARTZ_BLOCK.defaultBlockState() : Blocks.GOLD_BLOCK.defaultBlockState());
+            }
         }
     }
 

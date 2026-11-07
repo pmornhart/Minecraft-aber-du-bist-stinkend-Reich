@@ -1,0 +1,33 @@
+# Luxus-Treppen 0.4.9 (Quarz und Gold) zur Mine und zum Endportal: Tor am Straßenende, Blick hinunter, unten.
+# Aufruf: tools/ingame/test.sh 26.3 tools/ingame/szenarien/treppe049.txt
+warte 30
+server /gamemode creative @p
+server /time set 6000
+server /gamerule advance_time false
+merke anfang
+bis 900 Treppe zu .*Endportal.* fertig|keine Treppe zu .*Endportal
+server /gamemode spectator @p
+taste F1
+server /butler strassenpunkt 1 99999
+warte 6
+server /execute at @p run tp @p ~ ~6 ~ facing ~ ~-8 ~2
+warte 5
+bild v01_treppe_mine_tor_oben
+server /butler treppenblick mine 0
+warte 5
+bild v02_treppe_mine_tor
+server /butler treppenblick mine 0.4
+warte 5
+bild v03_treppe_mine_mitte
+server /butler treppenblick mine 1
+warte 5
+bild v04_treppe_mine_unten
+server /butler treppenblick endportal 0
+warte 6
+bild v05_treppe_endportal_tor
+server /butler treppenblick endportal 0.6
+warte 5
+bild v06_treppe_endportal_mitte
+server /butler treppenblick endportal 1
+warte 5
+bild v07_treppe_endportal_unten
