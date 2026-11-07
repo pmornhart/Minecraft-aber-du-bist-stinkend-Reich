@@ -1,0 +1,68 @@
+# Trailer Teil 9, Nachdreh: Abschleppen (Kamera näher), Hubschrauber-Abholung gleich danach (James fliegt noch zum
+# Landeplatz), Treppe zur Mine, Wegweiser.
+# Aufruf: SICHTWEITE=12 tools/ingame/test.sh 26.3 tools/ingame/szenarien/trailer9b.txt
+server /gamemode creative
+server /time set 6000
+server /weather clear
+server /gamerule advance_time false
+warte 30
+merke anfang
+bis 900 Straße Mine: Ende
+# c) Nach Hause bringen
+server /butler strassenpunkt 0 30
+warte 4
+server /execute at @p run summon stinkendreich:stretchlimo ~ ~ ~3
+warte 2
+server /butler auto schluessel
+server /gamemode spectator @p
+taste F1
+server /execute at @e[type=stinkendreich:stretchlimo,limit=1,sort=nearest] run tp @p ~-9 ~7 ~-9 facing ~ ~2 ~
+warte 4
+video start trailer9c
+kapitel Nach Hause bringen: James holt die Limo mit dem Hubschrauber
+merke
+server /butler auto heim
+bis 60 Abschleppen: Wagen am Seil
+warte 1
+server /tp @p -8 104 88 facing -20 90 60
+bis 60 Abschleppen: Wagen abgesetzt
+warte 1
+video stopp
+# d) Abholung gleich danach
+server /gamemode creative @p
+taste F1
+server /item replace entity @p weapon.mainhand with stinkendreich:handy
+server /spreadplayers 0 300 0 1 false @p
+warte 6
+taste F5
+video start trailer9d
+kapitel James kommt angeflogen und landet neben dir
+merke
+server /handy flieg|#villa
+bis 240 Der Hubschrauber steht bereit|fehlgeschlagen
+warte 3
+video stopp
+# F5 schaltet Ich-Sicht → hinten → vorn → Ich-Sicht: zweimal drücken, sonst schaut die Kamera danach in den Himmel
+taste F5
+warte 1
+taste F5
+# e) Treppe zur Mine
+merke anfang
+bis 600 Treppe zu .*Mine.* fertig|keine Treppe zu .*Mine
+server /gamemode spectator @p
+taste F1
+server /butler strassenpunkt 1 99999
+warte 6
+server /execute at @p run tp @p ~ ~5 ~ facing ~ ~-8 ~2
+warte 6
+video start trailer9e
+kapitel Straßen bis ins Ziel: Treppe hinunter in die Mine
+warte 4
+video stopp
+# f) Wegweiser
+server /butler wegweiser 0
+warte 8
+video start trailer9f
+kapitel Wegweiser in deiner Sprache
+warte 4
+video stopp

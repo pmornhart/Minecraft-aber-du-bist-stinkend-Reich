@@ -1,0 +1,28 @@
+# Runde 0.4.8, vierter Teil: erst Abschleppen, gleich danach (James fliegt noch zum Landeplatz) Heli-Abholung.
+# Aufruf: tools/ingame/test.sh 26.3 tools/ingame/szenarien/runde048d.txt
+warte 30
+server /gamemode creative @p
+server /time set 6000
+server /gamerule advance_time false
+merke anfang
+bis 900 Straße Mine: Ende
+server /butler strassenpunkt 0 30
+warte 4
+server /execute at @p run summon stinkendreich:stretchlimo ~ ~ ~3
+warte 2
+server /butler auto schluessel
+merke
+server /butler auto heim
+bis 120 Abschleppen: Wagen abgesetzt
+warte 2
+server /item replace entity @p weapon.mainhand with stinkendreich:handy
+server /spreadplayers 0 300 0 1 false @p
+warte 6
+merke
+server /handy flieg|#villa
+bis 30 fliege Sie hin|fehlgeschlagen
+bis 240 Der Hubschrauber steht bereit
+warte 2
+server /execute at @e[type=stinkendreich:hubschrauber,limit=1,sort=nearest] run tp @p ~8 ~2 ~8 facing entity @e[type=stinkendreich:hubschrauber,limit=1,sort=nearest]
+warte 2
+bild u01_heli_nach_abschleppen

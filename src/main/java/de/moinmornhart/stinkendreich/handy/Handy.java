@@ -66,6 +66,7 @@ public final class Handy {
                 ServerPlayer p = server.getPlayerList().getPlayer(e.getKey());
                 int versuche = Integer.parseInt(e.getValue()[1]) + 1;
                 if (p == null || versuche > 10) {
+                    de.moinmornhart.stinkendreich.StinkendReich.LOGGER.info("Handy: „{}“ verworfen, James kam nicht", e.getValue()[0]);
                     it.remove();
                 } else if (ButlerVerwaltung.vonSpieler(p) != null) {
                     it.remove();
@@ -91,6 +92,15 @@ public final class Handy {
     }
 
     static void ausfuehren(ServerPlayer p, String wert) {
+        try {
+            aktion(p, wert);
+        } catch (RuntimeException e) {
+            // Sonst verschluckt der Befehl den Fehler, und James tut einfach nichts
+            de.moinmornhart.stinkendreich.StinkendReich.LOGGER.error("Handy-Aktion „{}“ fehlgeschlagen", wert, e);
+        }
+    }
+
+    private static void aktion(ServerPlayer p, String wert) {
         if (!hatHandy(p)) {
             return;
         }
@@ -151,6 +161,8 @@ public final class Handy {
             }
         }
         ButlerEntity b = butler(p);
+        de.moinmornhart.stinkendreich.StinkendReich.LOGGER.info("Handy: „{}“ von {}, James {}", wert, p.getScoreboardName(),
+                b == null ? "wird erst geholt" : "bei " + b.blockPosition().toShortString() + (b.getVehicle() != null ? " (sitzt in " + b.getVehicle().getType().toShortString() + ")" : ""));
         if (b == null) {
             NACHHOLEN.put(p.getUUID(), new String[]{wert, "0"});
             return;

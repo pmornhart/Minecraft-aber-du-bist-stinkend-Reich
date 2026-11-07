@@ -572,6 +572,11 @@ public class ButlerEntity extends PathfinderMob {
         if (platz == null) {
             return false;
         }
+        // Erst aussteigen: Als Mitfahrer setzt ihn das Fahrzeug im nächsten Tick wieder auf seinen Sitz zurück (so blieb er
+        // im Hubschrauber auf dem Rückflug sitzen, statt zum Herrn zu kommen)
+        if (isPassenger()) {
+            stopRiding();
+        }
         welt().sendParticles(ParticleTypes.POOF, getX(), getY() + 1, getZ(), 12, 0.3, 0.6, 0.3, 0.02);
         teleportTo(platz.getX() + 0.5, platz.getY(), platz.getZ() + 0.5);
         welt().sendParticles(ParticleTypes.POOF, getX(), getY() + 1, getZ(), 12, 0.3, 0.6, 0.3, 0.02);

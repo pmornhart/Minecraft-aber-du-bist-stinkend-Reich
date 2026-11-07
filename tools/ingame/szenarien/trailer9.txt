@@ -70,6 +70,9 @@ server /handy flieg|#villa
 bis 240 Der Hubschrauber steht bereit
 warte 3
 video stopp
+# F5 zweimal: zurück in die Ich-Sicht (einmal = Frontansicht, die Kamera schaute dann in den Himmel)
+taste F5
+warte 1
 taste F5
 # e) Treppe zur Mine und Wegweiser
 merke anfang

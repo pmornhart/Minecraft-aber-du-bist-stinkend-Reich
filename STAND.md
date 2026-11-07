@@ -783,6 +783,11 @@ Werkzeug: `scratchpad/seite_daten.py` anpassen, `seite_neu.py seite_daten.json`,
   her. `HubschrauberEntity.chunkHalten`: solange James fliegt, ist sein Chunk zwangsgeladen (sonst blieb er bei kleiner
   Simulationsweite stehen – Tests haben 5). Handy-Aufträge warten bis 10 s, wenn James erst herbeigeholt wird (`NACHHOLEN`).
   `ButlerBefehle.besserFliegen`: weit weg vom Netz (> 80) und Ziel > 150 → Hubschrauber statt Limo.
+  `ButlerEntity.teleportiereNahe` steigt erst aus (als Mitfahrer setzte ihn der Hubschrauber sofort zurück auf den Sitz –
+  wer James rief, während er noch zum Landeplatz flog, bekam keinen Flug). Handy-Fehler landen im Protokoll („Handy: …“).
+- Szenarien: F5 schaltet Ich-Sicht → hinten → vorn; nach einer Aufnahme in dritter Person zweimal F5, sonst schauen
+  folgende Kamerabilder in den Himmel. Trailer Teil 9: `trailer9.txt` (a, b), Nachdreh `trailer9b.txt` (c–f),
+  Schnitt `ROH=<ordner mit a/b> python3 tools/ingame/trailer9_schnitt.py`.
 - **Chauffeur:** `chauffeurTempo` 100 (Konfig-Stand 1 hebt alte 60 an), SICHT 20, Kurven bis 44 Blöcke voraus mit Bremsweg.
 - **Tänzerinnen:** Anker fährt bei Inkognito mit (`TaenzerinEntity.hoeheVerschieben`), falsche Anker suchen sich in derselben
   Spalte den Clubboden bzw. die Tanzstange (`ankerPruefen`, alle 100 Ticks).
