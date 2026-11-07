@@ -8,15 +8,15 @@ import java.util.Locale;
  * Form eines Wegweisers an der Straße: ein Holzpfahl mit Pfeilschildern übereinander, jedes Schild zeigt in die Richtung
  * seiner Straße und trägt Ziel und Entfernung („MINE · 340 m“) auf beiden Seiten.
  *
- * <p>Gebaut wird er aus Anzeige-Figuren von Minecraft selbst (Block- und Text-Anzeigen). Deshalb sehen ihn auch Spieler
- * ohne Mod, und Mod und Paper-Plugin teilen sich diese Klasse (ohne Minecraft-Abhängigkeiten): Sie liefert nur die
- * Teile mit Drehung, Verschiebung und Größe relativ zum Fußpunkt des Pfahls (Mitte, Bodenhöhe).</p>
+ * <p>Gebaut wird er aus Anzeige-Figuren von Minecraft selbst (Block- und Text-Anzeigen), deshalb sehen ihn auch Spieler
+ * ohne Mod. Die Klasse kommt ohne Minecraft-Abhängigkeiten aus: Sie liefert nur die Teile mit Drehung, Verschiebung und
+ * Größe relativ zum Fußpunkt des Pfahls (Mitte, Bodenhöhe).</p>
  */
 public final class WegweiserForm {
     /** Pfahl, Schilder und Schrift. */
     public static final String PFAHL = "minecraft:spruce_log", KAPPE = "minecraft:dark_oak_slab", BRETT = "minecraft:dark_oak_planks";
     /** Stand der Form: ändert sich die Form, werden vorhandene Wegweiser neu aufgestellt (Teil der Signatur). */
-    public static final int FORM = 2;
+    public static final int FORM = 3;
     /** Farbe der Schrift (Gold, passend zur Villa). */
     public static final String SCHRIFTFARBE = "#FFD45A";
     /** Größe der Schrift (1 = Minecraft-Standard, ein fetter Buchstabe ist dann knapp 0,19 Blöcke breit). */
@@ -25,8 +25,22 @@ public final class WegweiserForm {
     private static final float PFAHL_DICKE = 0.22F, BRETT_HOEHE = 0.36F, BRETT_DICKE = 0.08F, ABSTAND = 0.55F;
     private static final float BREITE_JE_ZEICHEN = 0.19F, RAND = 0.6F, MIN_LAENGE = 1.3F, MAX_LAENGE = 4.2F;
 
-    /** Ein Schild: Aufschrift und Richtung, in die der Pfeil zeigt (waagerecht, x/z, muss nicht normiert sein). */
-    public record Schild(String text, double dx, double dz) {
+    /**
+     * Ein Schild: Ziel, Entfernung und Richtung, in die der Pfeil zeigt (waagerecht, x/z, muss nicht normiert sein).
+     * Das Ziel steht als Übersetzungsschlüssel ({@code schluessel}, mit Einsetzwert {@code wert}, z. B. dem Besitzer der
+     * Villa) darauf, damit jeder Spieler es in seiner Sprache liest; {@code ziel} ist die deutsche Fassung (Ersatz ohne
+     * Mod und Grundlage für die Länge des Bretts). Ohne Schlüssel steht {@code ziel} wörtlich da.
+     */
+    public record Schild(String ziel, String schluessel, String wert, String weite, double dx, double dz) {
+        /** Ganze Aufschrift (deutsch): „MINE  ·  340 m“. */
+        public String text() {
+            return ziel + "  ·  " + weite;
+        }
+
+        /** Dasselbe Schild mit anderer Pfeilrichtung. */
+        public Schild richtung(double x, double z) {
+            return new Schild(ziel, schluessel, wert, weite, x, z);
+        }
     }
 
     /**
@@ -34,7 +48,7 @@ public final class WegweiserForm {
      * {@code drehung} ist ein Quaternion (x, y, z, w), {@code versatz} und {@code groesse} wie in der Transformation
      * einer Anzeige-Figur (Verschiebung + Drehung · (Größe · Punkt)).
      */
-    public record Teil(String block, String text, float[] drehung, float[] versatz, float[] groesse) {
+    public record Teil(String block, Schild text, float[] drehung, float[] versatz, float[] groesse) {
         /** Transformation im Format der Anzeige-Figuren (SNBT), z. B. für {@code /summon}. */
         public String snbt() {
             return String.format(Locale.ROOT, "{left_rotation:[%sf,%sf,%sf,%sf],right_rotation:[0f,0f,0f,1f],translation:[%sf,%sf,%sf],scale:[%sf,%sf,%sf]}",
@@ -50,10 +64,30 @@ public final class WegweiserForm {
     private WegweiserForm() {
     }
 
-    /** Aufschrift eines Schildes: Ziel in Großbuchstaben und Entfernung (unter 1000 m in Metern, sonst in km). */
-    public static String aufschrift(String ziel, double meter) {
-        String weite = meter < 1000 ? Math.round(meter / 10.0) * 10 + " m" : String.format(Locale.GERMAN, "%.1f km", meter / 1000.0);
-        return ziel.toUpperCase(Locale.GERMAN) + "  ·  " + weite;
+    /** Entfernung auf dem Schild: unter 1000 m in Metern (auf 10 m gerundet), sonst in km. */
+    public static String weite(double meter) {
+        return meter < 1000 ? Math.round(meter / 10.0) * 10 + " m" : String.format(Locale.GERMAN, "%.1f km", meter / 1000.0);
+    }
+
+    /**
+     * Zeigen zwei Schilder fast in dieselbe Richtung (weniger als {@code grad} auseinander), bekommt das spätere die
+     * Richtung des früheren: Sonst kreuzen sich die Bretter, und die Spitze des unteren verdeckt die Schrift des oberen
+     * (Philips Bild: „THE VILLAGE · 41…“ hinter „THE MINE“).
+     */
+    public static List<Schild> entzerren(List<Schild> schilder, double grad) {
+        List<Schild> aus = new ArrayList<>();
+        for (Schild s : schilder) {
+            Schild neu = s;
+            for (Schild a : aus) {
+                double w = Math.toDegrees(Math.abs(Math.atan2(s.dz(), s.dx()) - Math.atan2(a.dz(), a.dx())));
+                if (Math.min(w, 360 - w) < grad) {
+                    neu = s.richtung(a.dx(), a.dz());
+                    break;
+                }
+            }
+            aus.add(neu);
+        }
+        return aus;
     }
 
     /** Alle Teile eines Wegweisers mit diesen Schildern (das erste Schild oben). */
@@ -71,7 +105,8 @@ public final class WegweiserForm {
             }
             float dx = (float) (s.dx() / laenge), dz = (float) (s.dz() / laenge);
             float y = hoehe - 0.4F - i * ABSTAND;
-            float l = Math.max(MIN_LAENGE, Math.min(MAX_LAENGE, s.text().length() * BREITE_JE_ZEICHEN * SCHRIFT + RAND));
+            // drei Zeichen Luft: andere Sprachen sind teils länger („THE NETHER PORTAL“)
+            float l = Math.max(MIN_LAENGE, Math.min(MAX_LAENGE, (s.text().length() + 3) * BREITE_JE_ZEICHEN * SCHRIFT + RAND));
             // Drehung um die Hochachse, die die x-Achse des Schildes in Pfeilrichtung legt: (1,0,0) → (dx, 0, dz)
             double winkel = Math.atan2(-dz, dx);
             float[] gier = {0, (float) Math.sin(winkel / 2), 0, (float) Math.cos(winkel / 2)};
@@ -86,8 +121,8 @@ public final class WegweiserForm {
             // Schrift vorn und hinten (hinten um 180° gedreht, damit sie auch von dort von links nach rechts läuft)
             float mitte = (hinten + l) * 0.46F, unten = -0.1F * SCHRIFT, ab = BRETT_DICKE / 2 + 0.006F;
             float[] gross = {SCHRIFT, SCHRIFT, SCHRIFT};
-            t.add(new Teil(null, s.text(), gier, verschoben(gier, y, mitte, unten, ab), gross));
-            t.add(new Teil(null, s.text(), mal(gier, new float[]{0, 1, 0, 0}), verschoben(gier, y, mitte, unten, -ab), gross));
+            t.add(new Teil(null, s, gier, verschoben(gier, y, mitte, unten, ab), gross));
+            t.add(new Teil(null, s, mal(gier, new float[]{0, 1, 0, 0}), verschoben(gier, y, mitte, unten, -ab), gross));
         }
         return t;
     }

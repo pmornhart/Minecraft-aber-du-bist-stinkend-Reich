@@ -55,6 +55,10 @@ jobs:
           ./gradlew buildAndCollect --no-daemon --stacktrace
           -Porg.gradle.java.installations.fromEnv=JAVA_HOME_21_X64,JAVA_HOME_25_X64
 
+      # Eine Datei für alle Minecraft-Versionen (tools/alle_versionen.py): alle Fassungen eingebettet, Fabric lädt die passende
+      - name: Sammel-Datei für alle Versionen
+        run: python3 tools/alle_versionen.py "build/libs/${VERSION}"
+
       - name: Release-Text
         run: |
           {
@@ -65,12 +69,14 @@ jobs:
               cat .github/neu.md
               echo
             fi
-            echo "Nimm die Datei, deren Name zu deiner Minecraft-Version passt, z. B. \`stinkendreich-${VERSION}+mc1.21.4.jar\`, und leg sie mit der Fabric API in den \`mods\`-Ordner."
+            echo "**Am einfachsten:** \`stinkendreich-${VERSION}+alle.jar\` – eine Datei für alle Minecraft-Versionen von 1.21 bis 26.3. Leg sie mit der Fabric API in den \`mods\`-Ordner, die Mod sucht sich die passende Fassung selbst aus."
+            echo
+            echo "Oder nimm die kleinere Datei, deren Name zu deiner Minecraft-Version passt, z. B. \`stinkendreich-${VERSION}+mc1.21.4.jar\`."
             echo
             echo "| Minecraft | Datei |"
             echo "|---|---|"
             # nach Minecraft-Version sortiert (1.21, 1.21.1 … 1.21.11, 26.1 …)
-            for f in build/libs/*/*.jar; do
+            for f in build/libs/*/*+mc*.jar; do
               n="$(basename "$f")"; mc="${n##*+mc}"; echo "${mc%.jar} ${n}"
             done | sort -V | while read -r mc n; do
               echo "| ${mc} | \`${n}\` |"

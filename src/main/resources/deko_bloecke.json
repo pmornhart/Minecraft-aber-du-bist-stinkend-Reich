@@ -770,6 +770,22 @@
     "klang": "glas"
   },
   {
+    "name": "neon_vip_mitte",
+    "form": [
+      [
+        8,
+        3,
+        15,
+        16,
+        13,
+        16
+      ]
+    ],
+    "licht": 10,
+    "fest": false,
+    "klang": "glas"
+  },
+  {
     "name": "neon_club",
     "form": [
       [

@@ -1,0 +1,92 @@
+# Trailer Teil 9 (0.4.8): VIP-Eingang der Unterwasser-Bar, Autoschlüssel und Automenü, James schleppt die Limo mit dem
+# Hubschrauber nach Hause, Hubschrauber kommt angeflogen, Treppe zur Mine, Wegweiser. Neue Welt.
+# Aufruf: SICHTWEITE=12 tools/ingame/test.sh 26.3 tools/ingame/szenarien/trailer9.txt
+# Weltkoordinaten = Villa + (-56, 62, -56); „fahrt“ und „/villa ort“ nehmen Villa-Koordinaten.
+server /gamemode creative
+server /time set 6000
+server /weather clear
+server /gamerule advance_time false
+warte 30
+merke anfang
+bis 900 Straße Mine: Ende
+# a) Unterwasser-Bar: an der Theke entlang zum VIP-Eingang
+server /gamemode spectator @p
+taste F1
+server /villa ort 36 17.6 65.5 -70 8
+warte 5
+video start trailer9a
+kapitel Neu in 0.4.8: Unterwasser-Bar mit Personaleingang und VIP-Eingang
+server fahrt 9 | 36 17.6 65.5 -70 8 | 44 17.6 65.5 -60 5 | 50.5 17.6 64.5 0 0 | 50.5 17.2 72 0 0
+warte 10
+video stopp
+# b) Autoschlüssel: Limo auf der Straße abschließen, Automenü
+server /gamemode creative @p
+taste F1
+server /butler strassenpunkt 0 30
+warte 4
+server /execute at @p run summon stinkendreich:stretchlimo ~ ~ ~3
+server /item replace entity @p weapon.mainhand with stinkendreich:autoschluessel
+warte 2
+server /butler auto schluessel
+server /execute at @p run tp @p ~5 ~1.5 ~-1 facing ~ ~ ~3
+warte 3
+video start trailer9b
+kapitel Autoschlüssel: per Funk abschließen – mit Piepen und Blinken
+server /butler auto zu
+warte 3
+server /butler auto auf
+warte 2
+kapitel Schleichen + Rechtsklick: Automenü mit Kofferraum
+server /butler auto menue
+warte 3
+klient schliessen
+server /butler auto kofferraum
+warte 3
+klient schliessen
+video stopp
+# c) Nach Hause bringen: James kommt mit dem Hubschrauber und trägt die Limo heim
+server /gamemode spectator @p
+taste F1
+server /execute at @e[type=stinkendreich:stretchlimo,limit=1,sort=nearest] run tp @p ~18 ~16 ~-14 facing ~ ~ ~-20
+warte 4
+video start trailer9c
+kapitel Nach Hause bringen: James holt die Limo mit dem Hubschrauber
+merke
+server /butler auto heim
+bis 120 Abschleppen: Wagen abgesetzt
+warte 2
+video stopp
+# d) Abholung: der Hubschrauber kommt aus der Luft angeflogen
+server /gamemode creative @p
+taste F1
+server /item replace entity @p weapon.mainhand with stinkendreich:handy
+server /spreadplayers 0 300 0 1 false @p
+warte 8
+taste F5
+video start trailer9d
+kapitel James kommt angeflogen und landet neben dir
+merke
+server /handy flieg|#villa
+bis 240 Der Hubschrauber steht bereit
+warte 3
+video stopp
+taste F5
+# e) Treppe zur Mine und Wegweiser
+merke anfang
+bis 600 Treppe zu .*Mine.* fertig|keine Treppe zu .*Mine
+server /gamemode spectator @p
+taste F1
+server /butler strassenpunkt 1 99999
+warte 6
+server /execute at @p run tp @p ~ ~7 ~ facing ~ ~-10 ~2
+warte 4
+video start trailer9e
+kapitel Straßen bis ins Ziel: Treppe hinunter in die Mine
+warte 4
+video stopp
+server /butler wegweiser 0
+warte 6
+video start trailer9f
+kapitel Wegweiser in deiner Sprache
+warte 4
+video stopp

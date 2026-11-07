@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "stinkendreich:block/deko/neon_vip_mitte"
+    },
+    "facing=east": {
+      "model": "stinkendreich:block/deko/neon_vip_mitte",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "stinkendreich:block/deko/neon_vip_mitte",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "stinkendreich:block/deko/neon_vip_mitte",
+      "y": 270
+    }
+  }
+}

@@ -9,7 +9,7 @@ import net.minecraft.client.model.geom.builders.PartDefinition;
 
 /**
  * Menschengestalt im Layout einer Spieler-Haut (64 × 64, zwei Schichten), wie sie auch Schaufensterpuppen, Standbilder
- * und das Paper-Plugin nutzen (tools/assets/spielerhaut.py): linker Arm und linkes Bein haben eigene Flächen, die
+ * nutzen (tools/assets/spielerhaut.py): linker Arm und linkes Bein haben eigene Flächen, die
  * zweite Schicht (Jacke, Ärmel, Hosenbeine) liegt 0,25 Pixel über dem Körper, die Haar-Schicht (Hut) 0,5 Pixel. Kopf und
  * Hut kommen aus {@link HumanoidModel#createMesh}, damit Minecraft sie in jeder Version wie gewohnt bewegt.
  */

@@ -101,7 +101,7 @@ public class FernseherBildschirm extends MenueBildschirm {
                 } else if (laeuft) {
                     senden("!pause");
                 }
-                KompatClient.oeffneLink(URI.create("https://www.youtube.com/watch?v=" + kennung));
+                KompatClient.oeffneLink(URI.create(de.moinmornhart.stinkendreich.fernseher.FernseherEntity.adresse(kennung)));
                 schliessen();
             }
         });

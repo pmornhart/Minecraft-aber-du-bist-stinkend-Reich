@@ -31,6 +31,44 @@ public class HubschrauberEntity extends AutoEntity {
         setNoGravity(true);
     }
 
+    /** Chunk, den der Hubschrauber gerade zwangsgeladen hält (Long.MIN_VALUE = keiner). */
+    private long gehalten = Long.MIN_VALUE;
+
+    /**
+     * Solange James fliegt, hält der Hubschrauber seinen Chunk geladen (der Ladeschein wandert mit). Sonst bliebe er
+     * stehen, sobald er außerhalb der Simulationsweite eines Spielers ist – etwa wenn er 90 Blöcke entfernt im Anflug
+     * auftaucht oder einen Wagen nach Hause trägt, während du woanders bist. In zwangsgeladenen Chunks ticken Figuren.
+     */
+    public void chunkHalten(boolean an) {
+        if (!(level() instanceof net.minecraft.server.level.ServerLevel welt)) {
+            return;
+        }
+        int cx = blockPosition().getX() >> 4, cz = blockPosition().getZ() >> 4;
+        long k = an ? ((long) cx << 32) ^ (cz & 0xffffffffL) : Long.MIN_VALUE;
+        if (k == gehalten) {
+            return;
+        }
+        if (gehalten != Long.MIN_VALUE) {
+            welt.setChunkForced((int) (gehalten >> 32), (int) gehalten, false);
+        }
+        if (an) {
+            welt.setChunkForced(cx, cz, true);
+        }
+        gehalten = k;
+    }
+
+    @Override
+    public void remove(RemovalReason grund) {
+        chunkHalten(false);
+        super.remove(grund);
+    }
+
+    /** Rotor sofort auf voller Drehzahl (Hubschrauber taucht im Anflug in der Luft auf). */
+    public void rotorAn() {
+        rotor = 1.0F;
+        steigen = 0;
+    }
+
     /** Rotordrehzahl 0 … 1. */
     public float rotor() {
         return rotor;
@@ -118,6 +156,9 @@ public class HubschrauberEntity extends AutoEntity {
     @Override
     public void tick() {
         super.tick();
+        if (!level().isClientSide()) {
+            chunkHalten(getControllingPassenger() instanceof de.moinmornhart.stinkendreich.butler.ButlerEntity b && b.faehrtGerade());
+        }
         // Rotor läuft mit Pilot hoch und ohne aus (auf jedem Rechner gleich, die Insassen sind abgeglichen)
         rotor = getControllingPassenger() != null || fahrerOhneMod() != null ? Math.min(1.0F, rotor + 0.012F) : Math.max(0.0F, rotor - 0.006F);
         rotorWinkelAlt = rotorWinkel;

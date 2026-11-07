@@ -1,7 +1,7 @@
 """Hilfen für Häute im Layout einer Spieler-Haut (64 × 64, zwei Schichten).
 
 So eine Haut passt überall: im Modell der Mod (client/MenschenNetz), auf Schaufensterpuppen der Server-Version, als
-Standbild bis 1.21.8 und im Paper-Plugin. Linke Arme und Beine haben eigene Flächen (bei den alten Häuten der Mod
+Standbild bis 1.21.8. Linke Arme und Beine haben eigene Flächen (bei den alten Häuten der Mod
 waren sie nur gespiegelt, auf einer Schaufensterpuppe fehlten sie dann). Die zweite Schicht (Hut, Jacke, Ärmel,
 Hosenbeine) liegt ein Stück über dem Körper und gibt Haaren und Kleidung Tiefe.
 """

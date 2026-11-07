@@ -79,7 +79,8 @@ public final class UpdatePruefer {
     /** Neueste Version mit einer .jar für genau diese Minecraft-Version, falls neuer als die laufende. */
     static Neu auswaehlen(JsonArray releases) {
         Neu bester = null;
-        String passend = "+mc" + StinkendReich.MINECRAFT + ".jar";
+        // Läuft die Sammel-Datei für alle Minecraft-Versionen, wird wieder die Sammel-Datei angeboten
+        String passend = alleInEiner() ? "+alle.jar" : "+mc" + StinkendReich.MINECRAFT + ".jar";
         for (JsonElement e : releases) {
             JsonObject r = e.getAsJsonObject();
             if (r.has("draft") && r.get("draft").getAsBoolean() || r.has("prerelease") && r.get("prerelease").getAsBoolean()) {
@@ -159,9 +160,20 @@ public final class UpdatePruefer {
         });
     }
 
-    /** Die .jar, aus der die Mod geladen wurde (null in der Entwicklungsumgebung). */
+    /** Kennung der Sammel-Datei für alle Minecraft-Versionen (tools/alle_versionen.py). */
+    private static final String ALLE = StinkendReich.MOD_ID + "_alle";
+
+    /** Wurde die Mod aus der Sammel-Datei für alle Minecraft-Versionen geladen? */
+    static boolean alleInEiner() {
+        return FabricLoader.getInstance().isModLoaded(ALLE);
+    }
+
+    /**
+     * Die .jar, aus der die Mod geladen wurde (null in der Entwicklungsumgebung). Bei der Sammel-Datei ist das die
+     * Sammel-Datei selbst, nicht die darin eingebettete Fassung.
+     */
     private static Path eigeneJar() {
-        return FabricLoader.getInstance().getModContainer(StinkendReich.MOD_ID)
+        return FabricLoader.getInstance().getModContainer(alleInEiner() ? ALLE : StinkendReich.MOD_ID)
                 .flatMap(m -> m.getOrigin().getPaths().stream().findFirst())
                 .filter(p -> p.toString().endsWith(".jar") && Files.isRegularFile(p))
                 .orElse(null);

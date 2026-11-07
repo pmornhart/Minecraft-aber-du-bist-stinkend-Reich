@@ -112,7 +112,12 @@ public final class Garage {
         List<AutoEntity> da = h.welt().getEntitiesOfClass(AutoEntity.class,
                 new AABB(p[0] - 2, p[1] - 1, p[2] - 2, p[0] + 2, p[1] + 3, p[2] + 2),
                 a -> a.art == h.art() && a.getPassengers().isEmpty());
+        // Wagen mit Besitzer oder vollem Kofferraum zuerst: verschwinden darf nur ein leerer, herrenloser
+        da.sort(java.util.Comparator.comparing(a -> a.istLeer() ? 1 : 0));
         for (int i = 1; i < da.size(); i++) {
+            if (!da.get(i).istLeer()) {
+                continue;
+            }
             de.moinmornhart.stinkendreich.StinkendReich.LOGGER.info("Garage: doppelten Wagen ({}) entfernt", h.art().name());
             da.get(i).discard();
         }

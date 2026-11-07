@@ -57,6 +57,10 @@ public final class Strassennetz {
     private boolean kreiselGebaut;
     private final List<Strasse> strassen = new ArrayList<>();
     private StrassenBau bau;
+    /** Treppe vom Straßenende hinunter ins Ziel (Mine, Endportal, Netherportal), die gerade entsteht. */
+    private Treppenbau treppe;
+    /** Straßen, deren Treppe fertig ist (oder die keine brauchen). */
+    private final java.util.Set<String> treppenFertig = new java.util.HashSet<>();
 
     private Strassennetz() {
     }
@@ -75,6 +79,8 @@ public final class Strassennetz {
             if (aktuell != null && aktuell.server == s) {
                 if (aktuell.bau != null) {
                     aktuell.bauTick();
+                } else if (aktuell.treppe != null || (s.getTickCount() % 100 == 50 && aktuell.naechsteTreppe())) {
+                    aktuell.treppeTick();
                 } else if (!aktuell.warteschlange.isEmpty() && s.getTickCount() % 20 == 0) {
                     aktuell.naechsteAutomatisch();
                 }
@@ -270,6 +276,8 @@ public final class Strassennetz {
 
     public void neuBauen() {
         strassen.clear();
+        treppe = null;
+        treppenFertig.clear();
         if (bau != null) {
             bau.freigeben();
         }
@@ -394,6 +402,30 @@ public final class Strassennetz {
         return false;
     }
 
+    /** Sucht eine Straße zu Mine, Endportal oder Netherportal ohne Treppe und beginnt sie (true, wenn eine begonnen wurde). */
+    private boolean naechsteTreppe() {
+        for (Strasse st : strassen) {
+            String art = Wegweiser.festesZiel(st.name());
+            if (art != null && !art.equals("dorf") && !treppenFertig.contains(st.name()) && !st.punkte().isEmpty()) {
+                treppe = new Treppenbau(server.overworld(), st.name(), art, st.ende());
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void treppeTick() {
+        if (treppe == null) {
+            return;
+        }
+        treppe.tick();
+        if (treppe.fertig()) {
+            treppenFertig.add(treppe.name);
+            treppe = null;
+            speichern();
+        }
+    }
+
     private void bauTick() {
         bau.tick();
         if (bau.fertig()) {
@@ -460,6 +492,12 @@ public final class Strassennetz {
             weg.add(ziel);
         }
         return weg;
+    }
+
+    /** Liegt die Stelle höchstens 80 Blöcke vom Straßennetz entfernt (dann kann James mit der Limo fahren)? */
+    public boolean amNetz(Vec3 pos) {
+        Vec3 mitte = kreiselMitte();
+        return mitte != null && (pos.distanceTo(mitte) < 80 || naechsteStelle(pos, mitte, 80) != null);
     }
 
     /**
@@ -624,6 +662,7 @@ public final class Strassennetz {
             strecken.add(bau.punkte());
         }
         kehrer.kehren(server.overworld(), strecken);
+        kehrer.wasserFernhalten(server.overworld());
     }
 
     public List<Strasse> strassen() {
@@ -662,6 +701,9 @@ public final class Strassennetz {
                 if (j.has("wegweiser")) {
                     n.wegweiser.laden(j.getAsJsonObject("wegweiser"));
                 }
+                if (j.has("treppen")) {
+                    j.getAsJsonArray("treppen").forEach(t -> n.treppenFertig.add(t.getAsString()));
+                }
             }
         } catch (Exception ex) {
             StinkendReich.LOGGER.warn("Straßennetz nicht lesbar: {}", ex.toString());
@@ -685,6 +727,9 @@ public final class Strassennetz {
         }
         j.add("strassen", liste);
         j.add("wegweiser", wegweiser.speichern());
+        JsonArray treppen = new JsonArray();
+        treppenFertig.forEach(treppen::add);
+        j.add("treppen", treppen);
         try {
             Files.writeString(pfad, GSON.toJson(j), StandardCharsets.UTF_8);
         } catch (Exception ex) {

@@ -101,14 +101,53 @@ public class FernseherEntity extends Mob {
         });
     }
 
-    /** Video-Kennung aus einem YouTube-Link (watch?v=, youtu.be/, shorts/ …) oder "" wenn keiner. */
+    /** Twitch: Video (Aufzeichnung) und Kanal (Livestream); Namen 3–25 Zeichen aus Buchstaben, Ziffern und _. */
+    private static final Pattern TWITCH_VIDEO = Pattern.compile("twitch\\.tv/videos/(\\d{5,15})");
+    private static final Pattern TWITCH_KANAL = Pattern.compile("twitch\\.tv/(?:popout/)?([A-Za-z0-9_]{3,25})(?:[/?#]|$)");
+    private static final Pattern NUR_TWITCH = Pattern.compile("tw:[a-z0-9_]{3,25}|twv:\\d{5,15}");
+    /** Pfade auf twitch.tv, die kein Kanal sind. */
+    private static final java.util.Set<String> TWITCH_KEIN_KANAL = java.util.Set.of("videos", "directory", "settings", "search",
+            "downloads", "jobs", "p", "subscriptions", "inventory", "wallet", "drops", "turbo", "prime");
+
+    /**
+     * Video-Kennung aus einem Link oder "" wenn keiner. YouTube (watch?v=, youtu.be/, shorts/ …): die 11 Zeichen der
+     * Kennung. Twitch (Philip, 07.11.: „anstatt YouTube-Videos auch noch Twitch-Streams“): „tw:kanal“ für einen Kanal
+     * (läuft live), „twv:nummer“ für eine Aufzeichnung.
+     */
     public static String kennung(String link) {
         String t = link == null ? "" : link.trim();
-        if (NUR_KENNUNG.matcher(t).matches()) {
+        if (NUR_KENNUNG.matcher(t).matches() || NUR_TWITCH.matcher(t).matches()) {
             return t;
+        }
+        if (t.contains("twitch.tv")) {
+            Matcher v = TWITCH_VIDEO.matcher(t);
+            if (v.find()) {
+                return "twv:" + v.group(1);
+            }
+            Matcher k = TWITCH_KANAL.matcher(t);
+            if (k.find() && !TWITCH_KEIN_KANAL.contains(k.group(1).toLowerCase(java.util.Locale.ROOT))) {
+                return "tw:" + k.group(1).toLowerCase(java.util.Locale.ROOT);
+            }
+            return "";
         }
         Matcher m = KENNUNG.matcher(t);
         return t.contains("youtu") && m.find() ? m.group(1) : "";
+    }
+
+    /** Ist die Kennung ein Twitch-Kanal oder eine Twitch-Aufzeichnung? */
+    public static boolean istTwitch(String kennung) {
+        return kennung != null && (kennung.startsWith("tw:") || kennung.startsWith("twv:"));
+    }
+
+    /** Webadresse zur Kennung (zum Abspielen mit yt-dlp und zum Öffnen im Browser). */
+    public static String adresse(String kennung) {
+        if (kennung.startsWith("twv:")) {
+            return "https://www.twitch.tv/videos/" + kennung.substring(4);
+        }
+        if (kennung.startsWith("tw:")) {
+            return "https://www.twitch.tv/" + kennung.substring(3);
+        }
+        return "https://www.youtube.com/watch?v=" + kennung;
     }
 
     public String video() {

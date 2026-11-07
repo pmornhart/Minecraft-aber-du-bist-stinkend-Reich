@@ -1,6 +1,6 @@
 # Stand (Übergabe)
 
-_Zuletzt aktualisiert: 2026-10-29, 19:22 Uhr (Release 0.4.7: Fernbedienung in der Hand, Wegweiser, Navi mit Limo oder Heli, Rollläden)_
+_Zuletzt aktualisiert: 2026-11-07, 17:40 Uhr (Runde 0.4.8: Philips Bilder, Autoschlüssel, Abschleppen per Heli, Treppen ins Ziel, eine .jar für alle Versionen)_
 
 **Philips feste Regel (26.10., mehrfach gesagt; 27.10. ernst gemeint – „sonst wechsle ich zu Codex“):** Die Fortschrittsseite nach JEDEM Zwischenschritt neu
 veröffentlichen (jede Gruppe Bilder, jedes fertige Feature, jeder Test) – ohne dass er es sagen muss.
@@ -755,6 +755,44 @@ Werkzeug: `scratchpad/seite_daten.py` anpassen, `seite_neu.py seite_daten.json`,
   `trailer8d.txt` (Spielstand nach `run/testwelt` kopiert, `WELT_BEHALTEN=1`; in der ersten Aufnahme war das Gelände noch nicht
   geladen), Schnitt `trailer8_schnitt.py`, crf 28/maxrate 700k angehängt: `docs/trailer.mp4` 16:26, 66 MB. Paper-Wegweiser zeigen
   das Ziel ohne „Straße zur …“.
+
+## Runde 0.4.8 (07.11., noch kein Release)
+
+- **Neue Cloud-Umgebung einrichten:** Java 25 nach `/opt/jdk25` (Adoptium), `apt-get install xdotool libegl1 libgl1 libgl1-mesa-dri
+  libglx-mesa0 libegl-mesa0` (ohne EGL startet 26.3 nicht: „Could not load EGL library“), `pip install nbtlib numpy pillow`.
+  Maven Central antwortet oft mit 429 → `~/.gradle/init.d/spiegel.gradle` (Google-Spiegel, nur lokal). Gradle mit
+  `JAVA_HOME=/opt/jdk25`. `bis`-Muster in Szenarien: „“ sind mehrere Bytes, `.` passt nicht → `.*` nehmen.
+- **Nachrüstung bestehender Villen** (`villa/VillaNachruestung`, Listen in `data/stinkendreich/villa_nachruestung/<name>.json`
+  aus `tools/villa/nachruestung.py <alte villa.nbt> <name>`): jede Liste einmal je Villa (Smart-Marke `nachruestung_<name>`),
+  nur wo noch der alte Block steht, nicht während Inkognito. Vor einer Bauplan-Änderung die alte villa.nbt sichern! Liste
+  `048_bar_kuppel` (373 Blöcke). Test: mit alter villa.nbt starten → „371 Blöcke getauscht, 0 … belassen“.
+- **Villa:** Bar mit Personaleingang an beiden Enden (Regale nur z 70, Holzboden), VIP-Eingang mit Goldrahmen x 49–52,
+  rotem Teppich, Bambus, `neon_vip_mitte` (deko.py: Modell um 8 px versetzt, Block bei x 50 = mittig über x 50/51). Kuppel
+  des Seerestaurants unten zwei Lagen senkrecht (vorher Glasstufen am Tisch), Tunnelglas nicht mehr in der Kuppel.
+- **Wegweiser:** Schilder unter 40° Unterschied parallel (`WegweiserForm.entzerren`), Ziel als Übersetzungsschlüssel
+  `stinkendreich.wegweiser.*` mit `fallback` (Namen der Straßen sind serverseitig oft englisch), FORM 3.
+- **Straßen:** `Treppenbau` (Mine: Schiene/Holzzaun, Endportal: Rahmen sonst Steinziegel, Netherportal: Portal; 2 breit,
+  Wendel bei mehr Tiefe als Weite; `treppen` im Straßennetz-JSON). Kein Unterbau/Pfeiler im Lichtraum einer anderen
+  Straße (`ueberFahrbahn`), keine Straße 1–4 Blöcke über einer anderen (`frei`). Straßenwart in `Strassenkehrer.wasserFernhalten`
+  (Flüssigkeit über der Fahrbahn weg, Zuläufe zumauern, Pfeiler/Geländer vom Lichtraum räumen; nur in Spielernähe, nie auf Grundstücken).
+- **Autos:** `AutoschluesselItem` (Wagen-UUID in CUSTOM_DATA, Funk 48), `AutoMenue` (ChestMenu 9x1 als Knöpfe; `clicked` ab
+  26.1 mit `ContainerInput`, davor `ClickType`), Kofferraum 27 Plätze, Besitzer = erster Schlüssel. `AbschleppAuftrag`
+  (HOLEN → ANFLUG → ANHAENGEN → TRAGEN → LANDEN, Log „Abschleppen: …“). Garage löscht nie Wagen mit Besitzer/Kofferraum.
+  Testhilfe `/butler auto menue|schluessel|zu|auf|kofferraum|heim`.
+- **Hubschrauber:** `HeliBereitstellung` setzt ihn 90 Blöcke entfernt in die Luft (James am Steuer, `rotorAn`), er fliegt sichtbar
+  her. `HubschrauberEntity.chunkHalten`: solange James fliegt, ist sein Chunk zwangsgeladen (sonst blieb er bei kleiner
+  Simulationsweite stehen – Tests haben 5). Handy-Aufträge warten bis 10 s, wenn James erst herbeigeholt wird (`NACHHOLEN`).
+  `ButlerBefehle.besserFliegen`: weit weg vom Netz (> 80) und Ziel > 150 → Hubschrauber statt Limo.
+- **Chauffeur:** `chauffeurTempo` 100 (Konfig-Stand 1 hebt alte 60 an), SICHT 20, Kurven bis 44 Blöcke voraus mit Bremsweg.
+- **Tänzerinnen:** Anker fährt bei Inkognito mit (`TaenzerinEntity.hoeheVerschieben`), falsche Anker suchen sich in derselben
+  Spalte den Clubboden bzw. die Tanzstange (`ankerPruefen`, alle 100 Ticks).
+- **Fernseher:** Twitch-Kanäle (`tw:name`) und -Aufzeichnungen (`twv:nummer`) über yt-dlp, `FernseherEntity.adresse`.
+- **Eine .jar für alle Versionen:** `tools/alle_versionen.py build/libs/<ver>` → `stinkendreich-<ver>+alle.jar` (Kennung
+  `stinkendreich_alle`, alle Fassungen per Jar-in-Jar, Bibliotheken einmal). Fabric wählt die Fassung mit passender
+  Minecraft-Bedingung; geprüft mit echten Fabric-Servern 1.21.1 und 26.3 (aus 0.4.7-Dateien). Release-Ablauf baut und hängt
+  sie an, `UpdatePruefer` bietet bei `stinkendreich_alle` wieder „+alle.jar“ an.
+- Paper-Reste entfernt (Szenarien trailer5b/trailer6, Kommentare). Tests: `runde048.txt` (Nachrüstung, mit alter villa.nbt),
+  `runde048b.txt`, `runde048c.txt`.
 
 ## Paper-Plugin entfernt (30.10., Philip: „lösch mal den Paper-Zeug, also das Plugin, nur Mod“)
 

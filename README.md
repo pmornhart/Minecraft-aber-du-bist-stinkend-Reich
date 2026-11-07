@@ -139,7 +139,7 @@ Wassergraben mit Zugbrücke (friert auch im Schnee nie zu, wird im Lockdown und 
 
 Auf Sofas, Liegen, Barhockern, Esszimmerstühlen, Gartenbänken, Gaming-Stühlen, der Klavierbank und der Bettbank kann man sich mit **Rechtsklick** hinsetzen, **Schleichen** steht wieder auf. In die **Schublade** jedes Nachttischs passen 9 Stapel, zum Beispiel Zugangskarte, Uhr und Gold; beim Abbauen fällt der Inhalt heraus.
 
-### 📺 Fernseher: YouTube im Spiel, mit Fernbedienung
+### 📺 Fernseher: YouTube und Twitch im Spiel, mit Fernbedienung
 
 <table>
 <tr>
@@ -148,7 +148,7 @@ Auf Sofas, Liegen, Barhockern, Esszimmerstühlen, Gartenbänken, Gaming-Stühlen
 </tr>
 </table>
 
-Rechtsklick auf den Fernseher (oder mit der **Fernbedienung**), YouTube-Link einfügen (Strg + V) und **Im Fernseher abspielen**. Das Video läuft direkt auf dem Bildschirm, der Ton kommt aus dem Fernseher und wird leiser, je weiter du weggehst. Alle in der Nähe sehen dieselbe Stelle. Im Menü: **Anhalten / Weiter**, **« 10 s** und **30 s »**, **Stopp**, im Browser öffnen, Ausschalten. **Gemeinsam schauen:** Startet jemand ein Video, wartet der Fernseher, bis es bei allen in der Nähe geladen ist („Warte auf die anderen Zuschauer …“), und startet dann bei allen gleichzeitig.
+Rechtsklick auf den Fernseher (oder mit der **Fernbedienung**), YouTube- oder **Twitch**-Link einfügen (Strg + V) und **Im Fernseher abspielen**. Bei Twitch geht ein Kanal (`twitch.tv/kanal`, läuft live) oder eine Aufzeichnung (`twitch.tv/videos/…`). Das Video läuft direkt auf dem Bildschirm, der Ton kommt aus dem Fernseher und wird leiser, je weiter du weggehst. Alle in der Nähe sehen dieselbe Stelle. Im Menü: **Anhalten / Weiter**, **« 10 s** und **30 s »**, **Stopp**, im Browser öffnen, Ausschalten. **Gemeinsam schauen:** Startet jemand ein Video, wartet der Fernseher, bis es bei allen in der Nähe geladen ist („Warte auf die anderen Zuschauer …“), und startet dann bei allen gleichzeitig.
 
 **Beim ersten Video** fragt die Mod einmal, ob sie drei kostenlose Hilfsprogramme laden darf: **yt-dlp** (findet das Video), **FFmpeg** (macht daraus Bild und Ton) und **Deno** (hilft yt-dlp bei YouTube). Zusammen etwa 200 MB, direkt von den offiziellen GitHub-Seiten nach `.minecraft/stinkendreich/werkzeuge`. Sind sie schon auf dem PC installiert, nimmt die Mod diese (auf dem Mac FFmpeg mit `brew install ffmpeg`). yt-dlp hält sich selbst aktuell, denn YouTube ändert öfter etwas. Die Lautstärke regelt der Regler **Jukebox/Notenblöcke** und `fernseherLautstaerke` in der Config; `fernseherVideos: false` schaltet Videos im Spiel ab (dann nur Vorschaubild und Browser).
 
@@ -313,7 +313,9 @@ In der **Tiefgarage** stehen zehn Wagen: das goldene **Bonzenauto** (Cabrio mit 
 | **G** | Scheinwerfer (leuchten wirklich) |
 | **V** | Kamera: Verfolger · Fahrersicht · Verfolger weit |
 
-Lackfarben: Schwarz, Weiß, Rot, Gelb, Gold, Blau, Grün, Pink – einfach mit dem passenden Farbstoff anklicken. Schleichen + Rechtsklick mit leerer Hand packt das Auto ein.
+Lackfarben: Schwarz, Weiß, Rot, Gelb, Gold, Blau, Grün, Pink – einfach mit dem passenden Farbstoff anklicken.
+
+**Automenü und Autoschlüssel:** **Schleichen + Rechtsklick** auf einen Wagen öffnet das Automenü: **Kofferraum** (27 Plätze), **Abschließen / Aufschließen**, **Schlüssel nehmen**, **Nach Hause bringen** und **Einpacken** (der Wagen wird wieder zum Gegenstand). Wer zuerst einen Schlüssel nimmt, wird Besitzer des Wagens; danach bekommt nur er Ersatzschlüssel. Mit dem **Autoschlüssel** in der Hand schließt ein Rechtsklick den Wagen per Funk ab oder auf (bis 48 Blöcke, mit Piepen und Blinken). Einen abgeschlossenen Wagen öffnet nur, wer den passenden Schlüssel dabeihat. **Nach Hause bringen:** James kommt mit dem Hubschrauber, hängt den Wagen ans Seil, fliegt ihn zur Villa und stellt ihn in die Tiefgarage – auch wenn du längst woanders bist.
 
 <br>
 
@@ -326,7 +328,7 @@ Lackfarben: Schwarz, Weiß, Rot, Gelb, Gold, Blau, Grün, Pink – einfach mit d
 </tr>
 </table>
 
-Schwarz-goldener Luxus-Hubschrauber mit getönten Scheiben und Rotorgeräusch. Einsteigen mit Rechtsklick; der Rotor läuft in gut vier Sekunden hoch, dann hebt er ab. Oder du lässt **James fliegen** („Butler, flieg mich zum Strand“): Er holt dich ab, landet neben dir und setzt dich am Ziel ab.
+Schwarz-goldener Luxus-Hubschrauber mit getönten Scheiben und Rotorgeräusch. Einsteigen mit Rechtsklick; der Rotor läuft in gut vier Sekunden hoch, dann hebt er ab. Oder du lässt **James fliegen** („Butler, flieg mich zum Strand“): Er kommt aus Richtung Villa angeflogen, landet neben dir und setzt dich am Ziel ab. Stehst du weit weg von jeder Straße und sagst „bring mich nach Hause“, nimmt er von selbst den Hubschrauber statt der Limo. Als Chauffeur fährt James die Limo auf geraden Strecken mit bis zu 100 km/h und bremst rechtzeitig vor Kurven.
 
 | Taste | |
 |---|---|
@@ -372,7 +374,7 @@ Jeder Bewohner bekommt einmal ein **goldenes Handy** geschenkt (auch in Welten v
 
 **Bodyguards:** Echte Eisengolems mit Sakko, weißem Hemd, Krawatte, roter Blume und Sonnenbrille. Sie können nicht sterben und bleiben wie echte Personenschützer an deiner Seite: Taucht ein Monster auf, drehen sie sich hin, heben die goldene Pistole und schießen – bei mehreren Gegnern nimmt sich jeder einen eigenen. Die Pistole halten sie wie du, mit gehobenem Arm und dem Lauf nach vorn. Kommt einer zu nah, stecken sie die Pistole weg und es gibt die Golem-Faust. Creeper erledigen sie nur aus der Ferne, damit nichts in die Luft fliegt.
 
-**Straßennetz:** Sobald du die Welt betrittst, entstehen Straßen zum Dorf, zur Mine, zum Netherportal und zum Endportal; für jedes neue Ziel baut James eine echte Straße: zuerst einen Kreisel mit Insel vor der Villa, dann eine Straße mit Mittelstreifen, Bordstein, Laternen und Brücken zum Ziel. Neue Ziele zweigen vom nächsten Straßenstück ab, so wächst ein ganzes Netz – und du kannst es auch selbst befahren. Abgerissen wird nichts, weder an der Villa noch an deinen Bauten. Die Straßen liegen immer an der Luft: durch Hügel als offener Einschnitt, über Meer und Flüsse als Brücke mit Geländer und Laternen, Höhenunterschiede mit halben Stufen, über die das Auto weich rollt. Was beim Bau neben der Straße liegen bleibt (zerfallendes Laub, abgefallene Blumen), räumt ein Straßenkehrer weg – so sammelst du beim Fahren keine Setzlinge und Stöcke mehr ein. **Wegweiser:** An der Zufahrt vor dem Kreisel steht ein großer Wegweiser aus Holz mit Pfeilschildern in alle Richtungen („MINE · 340 m“, „DORF · 1,2 km“), und an jedem Abzweig einer mit der neuen Straße, dem Weg geradeaus und dem Heimweg. Kommt eine Straße dazu, wird er von selbst ergänzt – sichtbar auch für Freunde ohne Mod. `/butler strassen` zeigt alle Straßen, `Butler, bau eine Straße zum Dorf` baut eine schon vorher, `/butler strassen neu` baut alle neu.
+**Straßennetz:** Sobald du die Welt betrittst, entstehen Straßen zum Dorf, zur Mine, zum Netherportal und zum Endportal; für jedes neue Ziel baut James eine echte Straße: zuerst einen Kreisel mit Insel vor der Villa, dann eine Straße mit Mittelstreifen, Bordstein, Laternen und Brücken zum Ziel. Neue Ziele zweigen vom nächsten Straßenstück ab, so wächst ein ganzes Netz – und du kannst es auch selbst befahren. Abgerissen wird nichts, weder an der Villa noch an deinen Bauten. Die Straßen liegen immer an der Luft: durch Hügel als offener Einschnitt, über Meer und Flüsse als Brücke mit Geländer und Laternen, Höhenunterschiede mit halben Stufen, über die das Auto weich rollt. Was beim Bau neben der Straße liegen bleibt (zerfallendes Laub, abgefallene Blumen), räumt ein Straßenkehrer weg – so sammelst du beim Fahren keine Setzlinge und Stöcke mehr ein. Läuft Wasser aus einem Hang auf die Fahrbahn, mauert ein **Straßenwart** den Zulauf zu, und unter Brücken bleibt immer Platz für die Straße darunter. **Bis ins Ziel:** Am Ende der Straßen zur Mine, zum Endportal und zum Netherportal führt ein beleuchteter Treppengang aus Steinziegeln hinunter bis in den Minenschacht, die Festung bzw. zum Portal (bei großer Tiefe als Wendeltreppe). **Wegweiser:** An der Zufahrt vor dem Kreisel steht ein großer Wegweiser aus Holz mit Pfeilschildern in alle Richtungen („MINE · 340 m“, „DORF · 1,2 km“, in deiner Spielsprache), und an jedem Abzweig einer mit der neuen Straße, dem Weg geradeaus und dem Heimweg. Kommt eine Straße dazu, wird er von selbst ergänzt – sichtbar auch für Freunde ohne Mod. `/butler strassen` zeigt alle Straßen, `Butler, bau eine Straße zum Dorf` baut eine schon vorher, `/butler strassen neu` baut alle neu.
 
 <table>
 <tr>
@@ -543,22 +545,13 @@ Gut zu wissen:
 
 1. [Fabric Loader](https://fabricmc.net/use/installer/) für deine Minecraft-Version installieren.
 2. [Fabric API](https://modrinth.com/mod/fabric-api) **für dieselbe Version** in den `mods`-Ordner legen.
-3. Aus dem [neuesten Release](https://github.com/MoinMornhart/Minecraft-aber-du-bist-stinkend-Reich/releases/latest) die passende `.jar` nehmen (Tabelle unten) und ebenfalls in `mods` legen.
-4. **Neue Welt** erstellen – du stehst vor dem Tor deiner Villa.
+3. Aus dem [neuesten Release](https://github.com/MoinMornhart/Minecraft-aber-du-bist-stinkend-Reich/releases/latest) die Datei **`stinkendreich-…+alle.jar`** nehmen und ebenfalls in `mods` legen. Sie passt für **jede** Minecraft-Version von 1.21 bis 26.3 – die Mod sucht sich beim Start die passende Fassung selbst aus.
+4. **Neue Welt** erstellen – du stehst vor dem Tor deiner Villa (in einer schon bestehenden Welt entsteht die Villa beim ersten Betreten auf einem freien Platz).
 
-> [!IMPORTANT]
-> Jede Datei passt **nur zu genau einer** Minecraft-Version. Die Version steht im Launcher neben „Spielen“ und im Spiel unten links im Hauptmenü. Erscheint beim Start „Incompatible mods found“, liegt die Datei für eine andere Version im `mods`-Ordner.
+> [!TIP]
+> Wer Speicherplatz sparen will, nimmt statt der Datei für alle Versionen die kleinere für genau seine Version, z. B. `stinkendreich-…+mc1.21.4.jar` (die Zahl hinter `+mc` muss **genau** deiner Version entsprechen). Bitte nicht beide zugleich in `mods` legen.
 
-| Deine Minecraft-Version | Diese Datei nehmen |
-|---|---|
-| 26.3 | `stinkendreich-…+mc26.3.jar` |
-| 26.2 | `stinkendreich-…+mc26.2.jar` |
-| 26.1 · 26.1.1 · 26.1.2 | `stinkendreich-…+mc26.1.jar` · `+mc26.1.1.jar` · `+mc26.1.2.jar` |
-| 1.21.11 · 1.21.10 · 1.21.9 | `stinkendreich-…+mc1.21.11.jar` · `+mc1.21.10.jar` · `+mc1.21.9.jar` |
-| 1.21.8 bis 1.21.1 | `stinkendreich-…+mc1.21.8.jar` … `+mc1.21.1.jar` |
-| 1.21 | `stinkendreich-…+mc1.21.jar` |
-
-Die Zahl hinter `+mc` muss **genau** deiner Version entsprechen. 1.21 bis 1.21.11 brauchen Java 21, 26.x braucht Java 25 (der offizielle Launcher bringt das passende Java mit).
+1.21 bis 1.21.11 brauchen Java 21, 26.x braucht Java 25 (der offizielle Launcher bringt das passende Java mit). Die Update-Funktion bietet dir immer dieselbe Art Datei an, die du gerade nutzt.
 
 ### 🖥️ Server: Freunde spielen ohne Mod mit (Vorschau, Minecraft 1.21.9 bis 26.3)
 

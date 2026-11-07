@@ -2,7 +2,7 @@
 """Erzeugt Textur, Glöckchen-Item und Texte für den Butler.
 
 Textur (64x64) im Layout einer Spieler-Haut mit beiden Schichten (tools/assets/spielerhaut.py), damit James auch als
-Schaufensterpuppe (Server ohne Mod, Paper) vollständig aussieht. Die zweite Schicht trägt das gekämmte Haar mit
+Schaufensterpuppe (Server ohne Mod) vollständig aussieht. Die zweite Schicht trägt das gekämmte Haar mit
 Seitenscheitel und grauen Schläfen (Hut-Schicht), Frack mit Revers und Einstecktuch (Jacke), Ärmel und Schuhe. In
 freien Ecken liegen die Zusatzteile des eigenen Modells (ButlerModell): Fliege (24,0) und Frackschöße (56,16).
 

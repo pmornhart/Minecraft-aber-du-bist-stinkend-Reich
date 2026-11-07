@@ -1146,10 +1146,12 @@ def club_ausbau() -> None:
         deko(b, x, y, 66, "barhocker", "south")
     for x, ding in ((34, "cocktail"), (37, "champagner"), (40, "cocktail"), (43, "champagner"), (46, "cocktail"), (48, "sektturm")):
         deko(b, x, y + 1, 68, ding)
-    for z in (69, 70):
-        for dy in (0, 1):
-            deko(b, 32, y + dy, z, "flaschenregal", "east")
-            deko(b, 49, y + dy, z, "flaschenregal", "west")
+    # Flaschenregale nur noch an der Glaswand (z 70): Bei z 69 bleibt an beiden Enden ein Durchgang hinter die Theke,
+    # damit Personal (und James) hineinkommt (Philip, 07.11.: „einen Eingang zur Bar, dass Mitarbeiter reingehen“)
+    for dy in (0, 1):
+        deko(b, 32, y + dy, 70, "flaschenregal", "east")
+        deko(b, 49, y + dy, 70, "flaschenregal", "west")
+    b.quader(33, y - 1, 69, 48, y - 1, 70, "dark_oak_planks")                # Holzboden hinter der Theke
     deko(b, 40, y + 3, 70, "neon_bar", "north")
     b.setze(41, oben, 69, LICHT)
     # Große Tanzfläche (x 35–47, z 42–58) mit mehr Discokugeln
@@ -1162,10 +1164,20 @@ def club_ausbau() -> None:
             if (x, z) not in ((x2, z2) for x2 in range(41, 47) for z2 in range(43, 58)) and (x + z) % 4 == 0 and x % 3 == 0:
                 if b.hole(x, oben, z) in (None, "minecraft:air"):
                     deko(b, x, oben, z, "discokugel")
-    # Eingang zum VIP-Seerestaurant: Durchgang in der Glaswand bei x 50–51, Leuchtschrift darüber
+    # Eingang zum VIP-Seerestaurant: Durchgang in der Glaswand bei x 50–51 mit Goldrahmen (Säulen x 49 und 52, Sturz),
+    # roter Teppich vom Club bis in den Glastunnel, Bambus in Töpfen links und rechts, Leuchtschrift über dem Rahmen
     b.luft(50, y, 71, 51, y + 2, 71)
+    b.quader(49, y, 71, 49, y + 3, 71, "gold_block")
+    b.quader(52, y, 71, 52, y + 3, 71, "gold_block")
     b.quader(50, y + 3, 71, 51, y + 3, 71, "gold_block")
-    deko(b, 52, y + 3, 70, "neon_vip", "north")
+    for z in range(66, 72):
+        b.quader(50, y, z, 51, y, z, "red_carpet")
+    pflanze(b, 53, y, 70, "potted_bamboo")
+    pflanze(b, 53, y, 66, "potted_bamboo")
+    b.setze(52, oben, 68, LICHT)
+    # VIP mittig über dem Durchgang (Philip, 07.11.: „das soll mittig sein“): Block bei x 50, Schild um einen halben
+    # Block nach Osten versetzt, sitzt also genau über der Mitte zwischen x 50 und 51
+    deko(b, 50, y + 3, 70, "neon_vip_mitte", "north")
 
 
 def seerestaurant() -> None:
@@ -1185,19 +1197,27 @@ def seerestaurant() -> None:
             b.setze(x, UG_DECKE + 1, z, LICHT)                        # und von oben
     # Kuppel
     mx, mz, r = 46, 85, 7
+    # Die untersten zwei Lagen stehen senkrecht (Abstand nur waagerecht gemessen): Bei einer reinen Halbkugel standen
+    # in der ersten Lage über dem Boden einzelne Glasblöcke auf dem Marmor (Philips Bild vom 07.11.: „der stört“)
     for x in range(mx - r - 1, mx + r + 2):
         for z in range(mz - r - 1, mz + r + 2):
-            for yy in range(boden, boden + r + 1):
-                d = ((x - mx) ** 2 + (yy - boden) ** 2 + (z - mz) ** 2) ** 0.5
+            for yy in range(boden, boden + r + 2):
+                d = ((x - mx) ** 2 + max(0, yy - boden - 1) ** 2 + (z - mz) ** 2) ** 0.5
                 if d <= r - 0.5:
                     b.setze(x, yy, z, QUARZ if yy == boden else "air")
                 elif d <= r + 0.5:
                     b.setze(x, yy, z, "glass")
-    # Glastunnel vom Club (z 71) bis in die Kuppel
+    # Glastunnel vom Club (z 71) bis in die Kuppel. In der Kuppel selbst kein Tunnelglas: Dort blieben sonst Glasblöcke
+    # neben der Tafel stehen (Philips Bild vom 07.11.)
+    def in_kuppel(x, yy, z):
+        return ((x - mx) ** 2 + max(0, yy - boden - 1) ** 2 + (z - mz) ** 2) ** 0.5 <= r - 0.5
     for z in range(72, 81):
-        b.quader(49, boden, z, 52, boden + 4, z, "glass")
-        b.quader(50, boden, z, 51, boden, z, QUARZ)
-        b.luft(50, boden + 1, z, 51, boden + 3, z)
+        for x in range(49, 53):
+            for yy in range(boden, boden + 5):
+                if in_kuppel(x, yy, z):
+                    continue
+                innen = 50 <= x <= 51 and boden + 1 <= yy <= boden + 3
+                b.setze(x, yy, z, "air" if innen else (QUARZ if yy == boden and 50 <= x <= 51 else "glass"))
     # Goldring im Kuppelboden, Lichter, Tafel mit Stühlen, Sektturm
     for x in range(mx - 6, mx + 7):
         for z in range(mz - 6, mz + 7):

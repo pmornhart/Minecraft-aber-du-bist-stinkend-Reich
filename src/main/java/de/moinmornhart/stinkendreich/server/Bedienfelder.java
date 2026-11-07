@@ -185,7 +185,7 @@ final class Bedienfelder {
         List<ActionButton> knoepfe = new ArrayList<>();
         knoepfe.add(knopf(Component.translatable("stinkendreich.fernseher.anzeigen"), 210, vorlage("fernseher", pos, id + "$(link)")));
         if (!tv.video().isEmpty()) {
-            String link = "https://www.youtube.com/watch?v=" + tv.video();
+            String link = de.moinmornhart.stinkendreich.fernseher.FernseherEntity.adresse(tv.video());
             inhalt.add(text(Component.translatable("stinkendreich.fernseher.laeuft", link)));
             knoepfe.add(knopf(Component.translatable("stinkendreich.fernseher.abspielen"), 210,
                     new StaticAction(new ClickEvent.OpenUrl(java.net.URI.create(link)))));

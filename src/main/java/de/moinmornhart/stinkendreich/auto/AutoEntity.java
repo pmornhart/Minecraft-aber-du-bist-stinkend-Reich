@@ -87,6 +87,13 @@ public class AutoEntity extends Mob {
     private final List<BlockPos> geladeneLichter = new ArrayList<>();
     private int hupeSperre;
 
+    // Schlüssel, Schloss und Kofferraum (Server)
+    /** Besitzer des Wagens: wer zuerst einen Schlüssel genommen hat (null = noch niemand). */
+    private java.util.UUID besitzer;
+    private boolean verschlossen;
+    /** Kofferraum mit 27 Plätzen (wie eine Truhe). */
+    private final net.minecraft.world.SimpleContainer kofferraum = new net.minecraft.world.SimpleContainer(27);
+
     public AutoEntity(EntityType<? extends AutoEntity> typ, Level welt, Autotyp art) {
         super(typ, welt);
         this.art = art;
@@ -341,12 +348,25 @@ public class AutoEntity extends Mob {
                 return InteractionResult.SUCCESS;
             }
         }
-        if (spieler.isShiftKeyDown() && stapel.isEmpty() && getPassengers().isEmpty()) {
-            // Einpacken: das Auto wird wieder zum Gegenstand
+        if (spieler.isShiftKeyDown()) {
+            // Schleichen + Rechtsklick: Automenü (Kofferraum, Schloss, Schlüssel, nach Hause bringen, einpacken)
+            if (spieler instanceof net.minecraft.server.level.ServerPlayer sp) {
+                AutoMenue.oeffnen(sp, this);
+            }
+            return InteractionResult.SUCCESS;
+        }
+        if (stapel.is(ModItems.AUTOSCHLUESSEL) && getUUID().equals(AutoschluesselItem.wagen(stapel))) {
+            // Mit dem passenden Schlüssel in der Hand: auf- bzw. abschließen
             if (!level().isClientSide()) {
-                lichterLoeschen();
-                spawnAtLocationSicher(new ItemStack(ModItems.auto(art)));
-                discard();
+                verschliessen(!verschlossen, spieler);
+            }
+            return InteractionResult.SUCCESS;
+        }
+        if (verschlossen && !AutoschluesselItem.hatSchluessel(spieler, this)) {
+            if (!level().isClientSide()) {
+                de.moinmornhart.stinkendreich.Kompat.nachricht(spieler, net.minecraft.network.chat.Component.translatable("stinkendreich.schluessel.verschlossen")
+                        .withStyle(net.minecraft.ChatFormatting.RED), true);
+                playSound(net.minecraft.sounds.SoundEvents.IRON_DOOR_CLOSE, 0.6F, 1.6F);
             }
             return InteractionResult.SUCCESS;
         }
@@ -358,6 +378,105 @@ public class AutoEntity extends Mob {
             }
         }
         return InteractionResult.SUCCESS;
+    }
+
+    // ------------------------------------------------------------------
+    // Schlüssel, Schloss, Kofferraum, nach Hause bringen
+    // ------------------------------------------------------------------
+
+    /** Herrenlos und leerer Kofferraum (darf als doppelter Wagen in der Garage verschwinden)? */
+    public boolean istLeer() {
+        return besitzer == null && kofferraum.isEmpty();
+    }
+
+    public boolean verschlossen() {
+        return verschlossen;
+    }
+
+    public java.util.UUID besitzer() {
+        return besitzer;
+    }
+
+    public boolean istBesitzer(Player p) {
+        return besitzer != null && besitzer.equals(p.getUUID());
+    }
+
+    /** Darf der Spieler Schloss, Kofferraum und Menü bedienen? Offener Wagen: jeder; abgeschlossen: nur mit Schlüssel. */
+    public boolean darfBedienen(Player p) {
+        return !verschlossen || AutoschluesselItem.hatSchluessel(p, this);
+    }
+
+    /** Ab- oder aufschließen, mit Piepen und kurzem Blinken der Scheinwerfer. */
+    public void verschliessen(boolean zu, Player wer) {
+        verschlossen = zu;
+        level().playSound(null, blockPosition(), ModSounds.PIEP_OK, SoundSource.NEUTRAL, 0.8F, zu ? 1.4F : 1.0F);
+        level().playSound(null, blockPosition(), net.minecraft.sounds.SoundEvents.IRON_TRAPDOOR_CLOSE, SoundSource.NEUTRAL, 0.5F, zu ? 1.6F : 1.9F);
+        blinken = zu ? 8 : 4;
+        if (wer != null) {
+            de.moinmornhart.stinkendreich.Kompat.nachricht(wer, net.minecraft.network.chat.Component.translatable(
+                    zu ? "stinkendreich.schluessel.zu" : "stinkendreich.schluessel.auf").withStyle(net.minecraft.ChatFormatting.GOLD), true);
+        }
+    }
+
+    /** Ticks, die die Scheinwerfer nach dem Schließen noch blinken (Server). */
+    private int blinken;
+
+    /** Schlüssel geben: Der Erste wird Besitzer; danach bekommt nur der Besitzer Ersatzschlüssel. */
+    public void schluesselGeben(net.minecraft.server.level.ServerPlayer p) {
+        if (besitzer != null && !istBesitzer(p)) {
+            de.moinmornhart.stinkendreich.Kompat.nachricht(p, net.minecraft.network.chat.Component.translatable("stinkendreich.schluessel.fremd")
+                    .withStyle(net.minecraft.ChatFormatting.RED), true);
+            return;
+        }
+        besitzer = p.getUUID();
+        ItemStack s = AutoschluesselItem.fuer(this);
+        if (!p.getInventory().add(s)) {
+            Block.popResource(p.level(), p.blockPosition(), s);
+        }
+        de.moinmornhart.stinkendreich.Kompat.nachricht(p, net.minecraft.network.chat.Component.translatable("stinkendreich.schluessel.bekommen")
+                .withStyle(net.minecraft.ChatFormatting.GOLD), true);
+    }
+
+    /** Kofferraum öffnen (abgeschlossen nur mit Schlüssel). */
+    public void kofferraumOeffnen(net.minecraft.server.level.ServerPlayer p) {
+        if (!darfBedienen(p)) {
+            de.moinmornhart.stinkendreich.Kompat.nachricht(p, net.minecraft.network.chat.Component.translatable("stinkendreich.schluessel.verschlossen")
+                    .withStyle(net.minecraft.ChatFormatting.RED), true);
+            return;
+        }
+        level().playSound(null, blockPosition(), net.minecraft.sounds.SoundEvents.CHEST_OPEN, SoundSource.NEUTRAL, 0.7F, 0.8F);
+        p.openMenu(new net.minecraft.world.SimpleMenuProvider((id, inv, sp) -> net.minecraft.world.inventory.ChestMenu.threeRows(id, inv, kofferraum),
+                net.minecraft.network.chat.Component.translatable("stinkendreich.automenue.kofferraum")));
+    }
+
+    /** James holt den Wagen mit dem Hubschrauber ab und stellt ihn in die Garage. */
+    public void heimBringen(net.minecraft.server.level.ServerPlayer p) {
+        de.moinmornhart.stinkendreich.butler.ButlerEntity b = de.moinmornhart.stinkendreich.butler.ButlerVerwaltung.vonSpieler(p);
+        if (b == null) {
+            de.moinmornhart.stinkendreich.butler.ButlerVerwaltung.rufen(p);
+            b = de.moinmornhart.stinkendreich.butler.ButlerVerwaltung.vonSpieler(p);
+        }
+        if (b == null) {
+            return;
+        }
+        if (getPassengers().contains(b)) {
+            b.stopRiding();
+        }
+        b.neueAuftraege(List.of(new de.moinmornhart.stinkendreich.butler.auftrag.AbschleppAuftrag(getUUID())));
+        b.sagen(net.minecraft.network.chat.Component.translatable("stinkendreich.butler.abschleppen.los"));
+    }
+
+    /** Wieder zum Gegenstand machen; der Inhalt des Kofferraums fällt heraus. */
+    public void einpacken() {
+        ejectPassengers();
+        lichterLoeschen();
+        for (int i = 0; i < kofferraum.getContainerSize(); i++) {
+            if (!kofferraum.getItem(i).isEmpty()) {
+                spawnAtLocationSicher(kofferraum.removeItemNoUpdate(i));
+            }
+        }
+        spawnAtLocationSicher(new ItemStack(ModItems.auto(art)));
+        discard();
     }
 
     private void spawnAtLocationSicher(ItemStack stapel) {
@@ -506,6 +625,12 @@ public class AutoEntity extends Mob {
     @Override
     public void tick() {
         super.tick();
+        // Nach dem Ab-/Aufschließen blinken die Scheinwerfer (gerade Anzahl: danach wie vorher)
+        if (blinken > 0 && !level().isClientSide()) {
+            if (blinken-- % 2 == 0) {
+                entityData.set(LICHT, !licht());
+            }
+        }
         // Kein Fallschaden für Auto und Insassen (auch nicht nach einem Sprung von zehn Blöcken)
         resetFallDistance();
         for (Entity e : getPassengers()) {
@@ -612,6 +737,10 @@ public class AutoEntity extends Mob {
         j.addProperty("farbe", farbe());
         j.addProperty("licht", licht());
         j.addProperty("kennzeichen", kennzeichen());
+        if (besitzer != null) {
+            j.addProperty("besitzer", besitzer.toString());
+        }
+        j.addProperty("verschlossen", verschlossen);
         JsonArray l = new JsonArray();
         for (BlockPos p : lichtBloecke) {
             l.add(p.asLong());
@@ -629,6 +758,8 @@ public class AutoEntity extends Mob {
             setzeFarbe(j.has("farbe") ? j.get("farbe").getAsInt() : 0);
             entityData.set(LICHT, j.has("licht") && j.get("licht").getAsBoolean());
             setzeKennzeichen(j.has("kennzeichen") ? j.get("kennzeichen").getAsString() : "");
+            besitzer = j.has("besitzer") ? java.util.UUID.fromString(j.get("besitzer").getAsString()) : null;
+            verschlossen = j.has("verschlossen") && j.get("verschlossen").getAsBoolean();
             if (j.has("lichtbloecke")) {
                 j.getAsJsonArray("lichtbloecke").forEach(e -> geladeneLichter.add(BlockPos.of(e.getAsLong())));
             }
@@ -642,36 +773,42 @@ public class AutoEntity extends Mob {
     protected void addAdditionalSaveData(ValueOutput ausgabe) {
         super.addAdditionalSaveData(ausgabe);
         ausgabe.putString(SCHLUESSEL, datenAlsText());
+        kofferraum.storeAsItemList(ausgabe.list("Kofferraum", ItemStack.CODEC));
     }
 
     @Override
     protected void readAdditionalSaveData(ValueInput eingabe) {
         super.readAdditionalSaveData(eingabe);
         datenAusText(eingabe.getStringOr(SCHLUESSEL, ""));
+        kofferraum.fromItemList(eingabe.listOrEmpty("Kofferraum", ItemStack.CODEC));
     }
     //?} else if >=1.21.5 {
     /*@Override
     public void addAdditionalSaveData(CompoundTag tag) {
         super.addAdditionalSaveData(tag);
         tag.putString(SCHLUESSEL, datenAlsText());
+        tag.put("Kofferraum", kofferraum.createTag(registryAccess()));
     }
 
     @Override
     public void readAdditionalSaveData(CompoundTag tag) {
         super.readAdditionalSaveData(tag);
         datenAusText(tag.getStringOr(SCHLUESSEL, ""));
+        kofferraum.fromTag(tag.getListOrEmpty("Kofferraum"), registryAccess());
     }
     *///?} else {
     /*@Override
     public void addAdditionalSaveData(CompoundTag tag) {
         super.addAdditionalSaveData(tag);
         tag.putString(SCHLUESSEL, datenAlsText());
+        tag.put("Kofferraum", kofferraum.createTag(registryAccess()));
     }
 
     @Override
     public void readAdditionalSaveData(CompoundTag tag) {
         super.readAdditionalSaveData(tag);
         datenAusText(tag.getString(SCHLUESSEL));
+        kofferraum.fromTag(tag.getList("Kofferraum", net.minecraft.nbt.Tag.TAG_COMPOUND), registryAccess());
     }
     *///?}
 }

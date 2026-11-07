@@ -578,6 +578,9 @@ public final class Inkognito {
             if (e instanceof de.moinmornhart.stinkendreich.butler.ButlerEntity butler) {
                 butler.hoeheVerschieben(dy);
             }
+            if (e instanceof de.moinmornhart.stinkendreich.club.TaenzerinEntity t) {
+                t.hoeheVerschieben(dy);
+            }
             if (welt.addFreshEntity(e)) {
                 da++;
             }
@@ -613,6 +616,9 @@ public final class Inkognito {
         e.resetFallDistance();
         if (e instanceof de.moinmornhart.stinkendreich.butler.ButlerEntity butler) {
             butler.hoeheVerschieben(richtung);
+        }
+        if (e instanceof de.moinmornhart.stinkendreich.club.TaenzerinEntity t) {
+            t.hoeheVerschieben(richtung);
         }
     }
 

@@ -1274,6 +1274,10 @@ BLOECKE = {
     "flamingo": (flamingo(), [[1, 12, 1, 15, 15, 15]], 0, False, "wolle", "axe", "Flamingo-Schwimmring", "Flamingo Float"),
     "neon_bar": (neonschild("neon_bar"), None, 10, False, "glas", "pickaxe", "Leuchtschrift BAR", "Neon Sign BAR"),
     "neon_vip": (neonschild("neon_vip"), None, 10, False, "glas", "pickaxe", "Leuchtschrift VIP", "Neon Sign VIP"),
+    # VIP über einem zwei Blöcke breiten Durchgang: Schild um einen halben Block nach Osten versetzt (sitzt dann mittig)
+    "neon_vip_mitte": ([k([8, 3, 15], [24, 13, 16], "neon_vip", uv={"north": [0, 3, 16, 13], "south": [0, 3, 16, 13],
+                                                                       "up": [0, 15, 16, 16], "down": [0, 15, 16, 16]})],
+                       [[8, 3, 15, 16, 13, 16]], 10, False, "glas", "pickaxe", "Leuchtschrift VIP (mittig)", "Neon Sign VIP (centred)"),
     "neon_club": (neonschild("neon_club"), None, 10, False, "glas", "pickaxe", "Leuchtschrift CLUB", "Neon Sign CLUB"),
     "neon_wein": (neonschild("neon_wein"), None, 10, False, "glas", "pickaxe", "Leuchtschrift WEIN", "Neon Sign WINE"),
     "notausgang_links": ([k([0, 3, 15], [16, 13, 16], "notausgang_gruen", north="notausgang_mann")], None, 8, False, "glas",

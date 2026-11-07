@@ -2,7 +2,7 @@
 """Erzeugt die Texturen der Show-Tänzerinnen im Geheimclub (vier Kostüme) und ihre Texte.
 
 Textur (64x64) im Layout einer Spieler-Haut mit schmalen Armen (3 Pixel) und beiden Schichten (tools/assets/
-spielerhaut.py): so sehen die Tänzerinnen auch als Schaufensterpuppe (Server ohne Mod, Paper) vollständig aus. Die
+spielerhaut.py): so sehen die Tänzerinnen auch als Schaufensterpuppe (Server ohne Mod) vollständig aus. Die
 zweite Schicht gibt den langen Haaren (Hut-Schicht und Rücken der Jacke) und dem Glitzer-Top Tiefe. In freien Ecken
 liegen die Zusatzteile des eigenen Modells (TaenzerinModell): Oberteil vorn (24,0) und Federschmuck (56,16).
 Kostüm: zweiteiliges Glitzer-Showkostüm im Stil einer Las-Vegas-Revue (etwa so viel wie ein Bikini, nicht

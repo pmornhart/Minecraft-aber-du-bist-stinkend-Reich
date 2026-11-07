@@ -133,12 +133,59 @@ public class TaenzerinEntity extends PathfinderMob {
         if (anker == null) {
             anker = position();
         }
+        if (tickCount % 100 == 17) {
+            ankerPruefen();
+        }
         if (anStange) {
             tanzeAnStange();
         } else {
             boolean steht = getNavigation().isDone() && getDeltaMovement().horizontalDistanceSqr() < 0.0004;
             entityData.set(TANZ, steht ? FREI : LAEUFT);
         }
+    }
+
+    /** Fährt die Villa im Inkognito-Modus um dy Blöcke, fährt der Anker mit (sonst zieht es sie zur alten Höhe). */
+    public void hoeheVerschieben(int dy) {
+        if (anker != null) {
+            anker = anker.add(0, dy, 0);
+        }
+    }
+
+    /**
+     * Passt der Anker noch zum Club? An der Stange steht im Anker-Block die Tanzstange, beim Laufen steht sie auf dem
+     * Clubboden (polierter Schwarzstein). Falls nicht – etwa weil die Villa vor 0.4.8 im Inkognito-Modus abgetaucht ist
+     * und der Anker oben blieb (Philips Bild vom 07.11.: drei Tänzerinnen draußen vor der Felswand) –, wird in derselben
+     * Spalte bis 80 Blöcke darüber und darunter die nächste passende Höhe gesucht und die Tänzerin dorthin gesetzt.
+     */
+    private void ankerPruefen() {
+        if (de.moinmornhart.stinkendreich.mechanik.Inkognito.aktiv(level().getServer())) {
+            return;
+        }
+        net.minecraft.core.BlockPos a = net.minecraft.core.BlockPos.containing(anker);
+        if (!level().hasChunkAt(a) || passt(a)) {
+            return;
+        }
+        for (int d = 1; d <= 80; d++) {
+            for (int richtung : new int[]{-1, 1}) {
+                net.minecraft.core.BlockPos q = a.above(d * richtung);
+                if (passt(q)) {
+                    anker = new Vec3(anker.x, anker.y + d * richtung, anker.z);
+                    getNavigation().stop();
+                    teleportTo(anStange ? getX() : anker.x, getY() + d * richtung, anStange ? getZ() : anker.z);
+                    de.moinmornhart.stinkendreich.StinkendReich.LOGGER.info("Tänzerin: Anker um {} Blöcke zurück in den Club gesetzt", d * richtung);
+                    return;
+                }
+            }
+        }
+    }
+
+    private boolean passt(net.minecraft.core.BlockPos a) {
+        if (anStange) {
+            var id = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(level().getBlockState(a).getBlock());
+            return id != null && id.getPath().equals("tanzstange");
+        }
+        var unten = level().getBlockState(a.below());
+        return unten.is(net.minecraft.world.level.block.Blocks.POLISHED_BLACKSTONE) && !level().getBlockState(a).isSolid();
     }
 
     /** Kreist langsam um die Stange; die Stange ist dabei rechts von ihr (rechte Hand an der Stange). */

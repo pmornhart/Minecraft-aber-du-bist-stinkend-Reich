@@ -356,7 +356,8 @@ public class ButlerEntity extends PathfinderMob {
     public boolean faehrtGerade() {
         Auftrag a = auftraege.peek();
         return a instanceof de.moinmornhart.stinkendreich.butler.auftrag.FahrAuftrag
-                || a instanceof de.moinmornhart.stinkendreich.butler.auftrag.FlugAuftrag;
+                || a instanceof de.moinmornhart.stinkendreich.butler.auftrag.FlugAuftrag
+                || a instanceof de.moinmornhart.stinkendreich.butler.auftrag.AbschleppAuftrag;
     }
 
     // ------------------------------------------------------------------

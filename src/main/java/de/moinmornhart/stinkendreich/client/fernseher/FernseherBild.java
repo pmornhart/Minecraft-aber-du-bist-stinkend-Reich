@@ -75,7 +75,10 @@ public final class FernseherBild {
 
     private static void laden(String video) {
         BufferedImage vorschau = null;
-        try {
+        if (de.moinmornhart.stinkendreich.fernseher.FernseherEntity.istTwitch(video)) {
+            // Twitch: ohne Anmeldung gibt es kein Vorschaubild; der Titel nennt Kanal bzw. Aufzeichnung
+            TITEL.put(video, video.startsWith("tw:") ? "Twitch · " + video.substring(3) + " (live)" : "Twitch · Video " + video.substring(4));
+        } else try {
             for (String name : new String[]{"maxresdefault.jpg", "hqdefault.jpg"}) {
                 HttpResponse<byte[]> antwort = NETZ.send(HttpRequest.newBuilder(
                         URI.create("https://img.youtube.com/vi/" + video + "/" + name)).timeout(Duration.ofSeconds(10)).build(),

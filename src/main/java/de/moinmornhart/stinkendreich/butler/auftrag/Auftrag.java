@@ -62,6 +62,7 @@ public abstract class Auftrag {
             case GehAuftrag.TYP -> GehAuftrag.ausJson(j);
             case FahrAuftrag.TYP -> FahrAuftrag.ausJson(j);
             case FlugAuftrag.TYP -> FlugAuftrag.ausJson(j);
+            case AbschleppAuftrag.TYP -> AbschleppAuftrag.ausJson(j);
             case AnrufAuftrag.TYP -> AnrufAuftrag.ausJson(j);
             default -> null;
         };

@@ -15,7 +15,7 @@ import java.util.Map;
 public final class ModDecken {
     /** Kurzname → Block (registriert als „decke_&lt;Kurzname&gt;“). */
     public static final Map<String, Block> BLOECKE = new LinkedHashMap<>();
-    /** Kurzname → ID des Vorbilds aus dem Spiel (das Paper-Plugin setzt dort das Vorbild selbst). */
+    /** Kurzname → ID des Vorbilds aus dem Spiel. */
     public static final Map<String, String> VORBILDER = new LinkedHashMap<>();
 
     static {

@@ -36,7 +36,7 @@ final class Wegweiser {
     private record Pfahl(String id, double x, double z, int strassenY, List<WegweiserForm.Schild> schilder) {
         String signatur() {
             StringBuilder sb = new StringBuilder("f" + WegweiserForm.FORM + ";");
-            schilder.forEach(s -> sb.append(s.text()).append('@').append(Math.round(Math.toDegrees(Math.atan2(s.dz(), s.dx())))).append(';'));
+            schilder.forEach(s -> sb.append(s.schluessel()).append(':').append(s.text()).append('@').append(Math.round(Math.toDegrees(Math.atan2(s.dz(), s.dx())))).append(';'));
             return sb.toString();
         }
     }
@@ -114,8 +114,7 @@ final class Wegweiser {
             for (Strassennetz.Strasse s : strassen) {
                 if (s.eltern() < 0 && !s.punkte().isEmpty()) {
                     BlockPos q = s.punkte().get(Math.min(10, s.punkte().size() - 1));
-                    hinzu(liste, new WegweiserForm.Schild(WegweiserForm.aufschrift(anzeigeName(s.name()), laenge(s, 0) + Strassennetz.AUSSEN),
-                            q.getX() + 0.5 - px, q.getZ() + 0.5 - pz));
+                    hinzu(liste, schild(anzeigeName(s.name()), laenge(s, 0) + Strassennetz.AUSSEN, q.getX() + 0.5 - px, q.getZ() + 0.5 - pz));
                 }
             }
             if (!liste.isEmpty()) {
@@ -162,31 +161,79 @@ final class Wegweiser {
                 ids.add(id);
             }
             List<WegweiserForm.Schild> liste = schilder.get(id);
-            hinzu(liste, new WegweiserForm.Schild(WegweiserForm.aufschrift(anzeigeName(s.name()), laenge(s, 0)), bx, bz));
+            hinzu(liste, schild(anzeigeName(s.name()), laenge(s, 0), bx, bz));
             if (i + 8 < ep.size()) {
                 BlockPos w = ep.get(i + 8);
-                hinzu(liste, new WegweiserForm.Schild(WegweiserForm.aufschrift(anzeigeName(e.name()), laenge(e, i)), w.getX() - j.getX(), w.getZ() - j.getZ()));
+                hinzu(liste, schild(anzeigeName(e.name()), laenge(e, i), w.getX() - j.getX(), w.getZ() - j.getZ()));
             }
             if (heim != null) {
                 BlockPos h = ep.get(Math.max(i - 8, 0));
-                hinzu(liste, new WegweiserForm.Schild(WegweiserForm.aufschrift(heim, bisKreisel(strassen, s.eltern(), i, 0)),
-                        h.getX() - j.getX(), h.getZ() - j.getZ()));
+                hinzu(liste, schild(heim, bisKreisel(strassen, s.eltern(), i, 0), h.getX() - j.getX(), h.getZ() - j.getZ()));
             }
         }
         List<Pfahl> plan = new ArrayList<>();
         for (int k = 0; k < ids.size(); k++) {
             List<WegweiserForm.Schild> liste = schilder.get(ids.get(k));
-            plan.add(new Pfahl(ids.get(k), orte.get(k)[0], orte.get(k)[1], (int) Math.floor(orte.get(k)[2]), List.copyOf(liste)));
+            plan.add(new Pfahl(ids.get(k), orte.get(k)[0], orte.get(k)[1], (int) Math.floor(orte.get(k)[2]),
+                    List.copyOf(WegweiserForm.entzerren(liste, 40))));
         }
         return plan;
     }
 
     /** Schild anfügen, außer es gibt schon eins zum selben Ziel. */
     private static void hinzu(List<WegweiserForm.Schild> liste, WegweiserForm.Schild s) {
-        String ziel = s.text().substring(0, s.text().indexOf("  ·"));
-        if (liste.stream().noneMatch(a -> a.text().startsWith(ziel + "  ·"))) {
+        if (liste.stream().noneMatch(a -> a.ziel().equals(s.ziel()))) {
             liste.add(s);
         }
+    }
+
+    /** Feste Ziele: Kennung und alle Namen, unter denen eine Straße dorthin heißen kann (deutsch und englisch). */
+    private static final String[][] FESTE = {
+            {"dorf", "DORF", "dorf", "the village"},
+            {"mine", "MINE", "mine", "the mine"},
+            {"netherportal", "NETHERPORTAL", "netherportal", "the nether portal"},
+            {"endportal", "ENDPORTAL", "endportal", "the end portal"}};
+    private static final java.util.regex.Pattern VILLA_VON = java.util.regex.Pattern.compile("(?i)villa von (.+)|(.+)'s villa");
+    private static final java.util.regex.Pattern VILLA_NR = java.util.regex.Pattern.compile("(?i)villa (\\d+)");
+
+    /** Festes Ziel („dorf“, „mine“, „netherportal“, „endportal“) zu einem Straßennamen, sonst null. */
+    static String festesZiel(String name) {
+        for (String[] f : FESTE) {
+            for (int i = 2; i < f.length; i++) {
+                if (name.trim().equalsIgnoreCase(f[i])) {
+                    return f[0];
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Schild zu einem Straßennamen. Die Namen der Straßen entstehen auf dem Server und sind deshalb oft englisch („the
+     * village“); auf dem Schild steht stattdessen ein Übersetzungsschlüssel, den jeder Spieler in seiner Sprache sieht.
+     */
+    static WegweiserForm.Schild schild(String name, double meter, double dx, double dz) {
+        String n = name.trim(), weite = WegweiserForm.weite(meter);
+        for (String[] f : FESTE) {
+            for (int i = 2; i < f.length; i++) {
+                if (n.equalsIgnoreCase(f[i])) {
+                    return new WegweiserForm.Schild(f[1], "stinkendreich.wegweiser." + f[0], null, weite, dx, dz);
+                }
+            }
+        }
+        var m = VILLA_NR.matcher(n);
+        if (m.matches()) {
+            return new WegweiserForm.Schild("VILLA " + m.group(1), "stinkendreich.wegweiser.villa_nr", m.group(1), weite, dx, dz);
+        }
+        m = VILLA_VON.matcher(n);
+        if (m.matches()) {
+            String herr = (m.group(1) != null ? m.group(1) : m.group(2)).toUpperCase(Locale.ROOT);
+            return new WegweiserForm.Schild("VILLA VON " + herr, "stinkendreich.wegweiser.villa", herr, weite, dx, dz);
+        }
+        if (n.equalsIgnoreCase("villa")) {
+            return new WegweiserForm.Schild("VILLA", "stinkendreich.wegweiser.villa_heim", null, weite, dx, dz);
+        }
+        return new WegweiserForm.Schild(n.toUpperCase(Locale.GERMAN), null, null, weite, dx, dz);
     }
 
     /** Name auf dem Schild: Zubringer führen zur selben Villa wie ihre Straße. */
@@ -243,13 +290,25 @@ final class Wegweiser {
         Kompat.befehl(welt.getServer(), "kill @e[tag=" + TAG + ",tag=" + id + "]");
     }
 
-    /** Aufschrift als Text-Baustein (ab 1.21.5 als NBT, davor als JSON in einer Zeichenkette). */
-    private static String text(String inhalt) {
-        String sicher = inhalt.replace("\\", "\\\\").replace("\"", "\\\"");
+    /**
+     * Aufschrift als Text-Baustein: Ziel übersetzbar (mit deutschem Ersatz für Spieler ohne Mod), dahinter die Entfernung.
+     * Ab 1.21.5 als NBT, davor als JSON in einer Zeichenkette.
+     */
+    private static String text(WegweiserForm.Schild s) {
+        String ziel = sicher(s.ziel()), rest = sicher("  ·  " + s.weite()), farbe = WegweiserForm.SCHRIFTFARBE;
         //? if >=1.21.5 {
-        return "{text:\"" + sicher + "\",color:\"" + WegweiserForm.SCHRIFTFARBE + "\",bold:true}";
-        //?} else
-        /*return "'{\"text\":\"" + sicher.replace("'", "\\'") + "\",\"color\":\"" + WegweiserForm.SCHRIFTFARBE + "\",\"bold\":true}'";*/
+        String kopf = s.schluessel() == null ? "text:\"" + ziel + "\""
+                : "translate:\"" + s.schluessel() + "\",fallback:\"" + ziel + "\"" + (s.wert() == null ? "" : ",with:[\"" + sicher(s.wert()) + "\"]");
+        return "{" + kopf + ",color:\"" + farbe + "\",bold:true,extra:[{text:\"" + rest + "\"}]}";
+        //?} else {
+        /*String kopf = s.schluessel() == null ? "\"text\":\"" + ziel + "\""
+                : "\"translate\":\"" + s.schluessel() + "\",\"fallback\":\"" + ziel + "\"" + (s.wert() == null ? "" : ",\"with\":[\"" + sicher(s.wert()) + "\"]");
+        return "'{" + kopf.replace("'", "\\'") + ",\"color\":\"" + farbe + "\",\"bold\":true,\"extra\":[{\"text\":\"" + rest + "\"}]}'";
+        *///?}
+    }
+
+    private static String sicher(String inhalt) {
+        return inhalt.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     // ---------------- Speichern ----------------

@@ -55,8 +55,9 @@ record VideoQuelle(String bild, String ton, Map<String, String> kopfzeilen, Stri
             befehl.add("--js-runtimes");
             befehl.add("deno:" + deno);
         }
-        // Die Kennung ist geprüft (11 Zeichen aus A–Z, a–z, 0–9, _ und -), wird also nie als Option gelesen
-        befehl.add("https://www.youtube.com/watch?v=" + kennung);
+        // Die Kennung ist geprüft (YouTube: 11 Zeichen aus A–Z, a–z, 0–9, _ und -; Twitch: Kanalname bzw. Nummer), die
+        // Adresse beginnt immer mit https:// und wird also nie als Option gelesen
+        befehl.add(de.moinmornhart.stinkendreich.fernseher.FernseherEntity.adresse(kennung));
         Process p = new ProcessBuilder(befehl).start();
         ByteArrayOutputStream fehlerText = new ByteArrayOutputStream();
         Thread fehlerLeser = mitlesen(p.getErrorStream(), fehlerText);
@@ -116,7 +117,7 @@ record VideoQuelle(String bild, String ton, Map<String, String> kopfzeilen, Stri
             }
         }
         return new VideoQuelle(bild, ton.isEmpty() ? bild : ton, kopf, agent, dauer, live,
-                "https://www.youtube.com/watch?v=" + kennung, text(bildFormat, "format_id"), text(tonFormat, "format_id"), info);
+                de.moinmornhart.stinkendreich.fernseher.FernseherEntity.adresse(kennung), text(bildFormat, "format_id"), text(tonFormat, "format_id"), info);
     }
 
     /**

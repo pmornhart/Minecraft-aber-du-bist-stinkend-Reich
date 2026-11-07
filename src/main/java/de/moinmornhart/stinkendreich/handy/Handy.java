@@ -37,11 +37,44 @@ import java.util.List;
  * Geht nur, wenn man ein Handy dabeihat.
  */
 public final class Handy {
+    /** James holt den Hubschrauber und fliegt damit zum Spieler (für Befehle außerhalb des Handys). */
+    public static void heliHolen(ServerPlayer p, ButlerEntity b) {
+        HeliBereitstellung.bereitstellen(p, b);
+    }
+
+    /** James kommt mit dem Hubschrauber zu einer Stelle (z. B. zu einem Wagen, den er abschleppt) und sitzt danach am Steuer. */
+    public static void heliHolenZu(net.minecraft.server.level.ServerLevel welt, net.minecraft.world.phys.Vec3 ziel, ButlerEntity b) {
+        HeliBereitstellung.bereitstellen(welt, ziel, b, true);
+    }
+
     private Handy() {
     }
 
+    /** Aufträge, die warten, bis James aus einem nicht geladenen Gebiet herbeigeholt ist: Spieler → (Aktion, Versuche). */
+    private static final java.util.Map<java.util.UUID, String[]> NACHHOLEN = new java.util.concurrent.ConcurrentHashMap<>();
+
     public static void registrieren() {
         Netz.bearbeiter("handy", 0, (spieler, pos, wert) -> ausfuehren(spieler, wert));
+        // Stand James weit weg (z. B. nach einem Flug auf dem Landeplatz, nicht geladen), holt butler() ihn erst herbei.
+        // Der Auftrag wartet dann, bis er da ist (jede Sekunde nachsehen, höchstens 10 Sekunden) – vorher ging er verloren.
+        net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(server -> {
+            if (server.getTickCount() % 20 != 0 || NACHHOLEN.isEmpty()) {
+                return;
+            }
+            for (var it = NACHHOLEN.entrySet().iterator(); it.hasNext(); ) {
+                var e = it.next();
+                ServerPlayer p = server.getPlayerList().getPlayer(e.getKey());
+                int versuche = Integer.parseInt(e.getValue()[1]) + 1;
+                if (p == null || versuche > 10) {
+                    it.remove();
+                } else if (ButlerVerwaltung.vonSpieler(p) != null) {
+                    it.remove();
+                    ausfuehren(p, e.getValue()[0]);
+                } else {
+                    e.setValue(new String[]{e.getValue()[0], String.valueOf(versuche)});
+                }
+            }
+        });
         // Dasselbe als Befehl, für Spieler ohne Mod (die Knöpfe des Handy-Dialogs, siehe server/HandyDialog)
         net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback.EVENT.register((befehle, registry, umgebung) -> befehle.register(
                 net.minecraft.commands.Commands.literal("handy").then(net.minecraft.commands.Commands
@@ -119,6 +152,7 @@ public final class Handy {
         }
         ButlerEntity b = butler(p);
         if (b == null) {
+            NACHHOLEN.put(p.getUUID(), new String[]{wert, "0"});
             return;
         }
         switch (was) {
@@ -139,7 +173,7 @@ public final class Handy {
                 // Hubschrauber gewählt oder du sitzt schon drin: James holt dich damit ab und fliegt los, sobald du
                 // eingestiegen bist (Philip: „Ich steige ein und sofort fliegt er mich“)
                 boolean imHeli = p.getVehicle() instanceof de.moinmornhart.stinkendreich.auto.AutoEntity h && h.art.fliegt();
-                if (was.equals("flieg") || imHeli) {
+                if (was.equals("flieg") || imHeli || ButlerBefehle.besserFliegen(p, z.punkt())) {
                     if (!imHeli) {
                         HeliBereitstellung.bereitstellen(p, b);
                     }

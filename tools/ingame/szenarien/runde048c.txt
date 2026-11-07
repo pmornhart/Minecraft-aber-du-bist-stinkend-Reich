@@ -1,0 +1,54 @@
+# Runde 0.4.8, dritter Teil: VIP-Schild mittig, Hubschrauber-Abholung (James steht vorher weit weg auf dem Landeplatz),
+# Straßenwart mit Wasserquelle, Treppe zur Mine von innen. Weltkoordinaten = Villa + (-56, 62, -56).
+# Aufruf: tools/ingame/test.sh 26.3 tools/ingame/szenarien/runde048c.txt
+warte 30
+server /gamemode creative @p
+server /time set 6000
+server /gamerule advance_time false
+# --- VIP-Schild mittig ---
+server /gamemode spectator @p
+taste F1
+server /tp @p -5.0 78.4 5.5 facing -5 79.8 15
+warte 6
+bild t01_vip_mittig
+taste F1
+server /gamemode creative @p
+# --- Heli-Abholung: der Hubschrauber kommt aus der Luft angeflogen ---
+server /item replace entity @p weapon.mainhand with stinkendreich:handy
+server /spreadplayers 0 300 0 1 false @p
+warte 8
+merke
+server /handy flieg|#villa
+bis 30 Ich fliege Sie hin|fliege Sie hin
+warte 2
+server /execute at @e[type=stinkendreich:hubschrauber,limit=1,sort=nearest] run tp @p ~14 ~-3 ~14 facing entity @e[type=stinkendreich:hubschrauber,limit=1,sort=nearest]
+warte 1
+bild t02_heli_im_anflug
+bis 240 Der Hubschrauber steht bereit
+warte 2
+server /execute at @e[type=stinkendreich:hubschrauber,limit=1,sort=nearest] run tp @p ~8 ~2 ~8 facing entity @e[type=stinkendreich:hubschrauber,limit=1,sort=nearest]
+warte 2
+bild t03_heli_gelandet
+# --- Straßenwart: Wasserquelle neben der Fahrbahn ---
+merke anfang
+bis 900 Straße Mine: Ende
+server /butler strassenpunkt 0 40
+warte 4
+merke
+server /execute at @p run setblock ~6 ~3 ~ minecraft:water
+warte 4
+server /execute at @p run tp @p ~-4 ~4 ~-4 facing ~6 ~ ~
+bild t04_wasser_kommt
+bis 30 Straßenwart
+warte 10
+bild t05_wasser_weg
+# --- Treppe zur Mine von innen ---
+merke anfang
+bis 600 Treppe zu .*Mine.* fertig|keine Treppe zu .*Mine
+server /gamemode spectator @p
+taste F1
+server /butler strassenpunkt 1 99999
+warte 6
+server /execute at @p run tp @p ~ ~-3 ~ facing ~ ~-6 ~3
+warte 4
+bild t06_treppe_innen

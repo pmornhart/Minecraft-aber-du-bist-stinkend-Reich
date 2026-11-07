@@ -21,7 +21,7 @@ import net.minecraft.world.phys.Vec3;
  */
 public final class Chauffeur {
     /** Wie weit er vorausschaut (Blöcke). */
-    private static final int SICHT = 12;
+    private static final int SICHT = 20;
     /** Abweichungen von der Zielrichtung, die er prüft (Grad). */
     private static final int[] RICHTUNGEN = {0, 12, -12, 25, -25, 40, -40, 55, -55, 75, -75, 100, -100, 135, -135};
     private static final int KEIN = Integer.MIN_VALUE;
@@ -29,6 +29,8 @@ public final class Chauffeur {
     private static final double DICHT = 5.0;
     /** So weit voraus auf der Spur zielt er (Blöcke). */
     private static final double VORAUS = 6.0;
+    /** Verzögerung, mit der James vor Kurven bremst (Blöcke/Tick²; Vollbremsung des Wagens: 0,06). */
+    private static final double BREMSEN = 0.03;
 
     /** Zwischenziele und am Ende das Ziel. */
     private final java.util.List<Vec3> punkte;
@@ -150,13 +152,18 @@ public final class Chauffeur {
         if (Math.abs(fehler) > 45) {
             soll = Math.min(soll, 0.28);
         }
-        // Vor engen Kurven auf der Spur bremsen
-        Vec3 weit = vorausPunkt(pos, 14);
-        float kurve = Math.abs(Mth.wrapDegrees((float) (Mth.atan2(weit.z - pos.z, weit.x - pos.x) * Mth.RAD_TO_DEG) - 90.0F - auto.getYRot()));
-        if (kurve > 60) {
-            soll = Math.min(soll, 0.22);
-        } else if (kurve > 30) {
-            soll = Math.min(soll, 0.34);
+        // Vor Kurven auf der Spur rechtzeitig bremsen: Für Punkte in mehreren Entfernungen voraus gilt ein Kurventempo
+        // (je schärfer, desto langsamer), und so schnell darf er jetzt sein, dass er bis dorthin mit sanftem Bremsen
+        // (BREMSEN Blöcke/Tick²) darauf herunterkommt. Auf langen Geraden fährt James so bis zu 100 km/h.
+        for (double d : new double[]{8, 14, 22, 32, 44}) {
+            Vec3 weit = vorausPunkt(pos, d);
+            double bis = waagerecht(pos, weit);
+            if (bis < 3) {
+                continue;
+            }
+            float kurve = Math.abs(Mth.wrapDegrees((float) (Mth.atan2(weit.z - pos.z, weit.x - pos.x) * Mth.RAD_TO_DEG) - 90.0F - auto.getYRot()));
+            double vk = kurve > 60 ? 0.22 : kurve > 30 ? 0.34 : kurve > 15 ? 0.6 : kurve > 8 ? 0.95 : max;
+            soll = Math.min(soll, Math.sqrt(vk * vk + 2 * BREMSEN * Math.max(0, bis - 4)));
         }
         soll = Math.max(0.12, soll);
         double gas = auto.tempo() < soll - 0.02 ? 1 : (auto.tempo() > soll + 0.08 ? -1 : 0);

@@ -12,6 +12,9 @@ import net.minecraft.world.item.Rarity;
 public final class ModItems {
     /** Zugangskarte: öffnet Kartenleser und automatische Tore der Villa. */
     public static final Item ZUGANGSKARTE = ModRegister.item("zugangskarte", Item::new, new Item.Properties().stacksTo(1));
+    /** Autoschlüssel: gehört zu einem Wagen, schließt ihn per Funk ab und auf (siehe AutoschluesselItem). */
+    public static final Item AUTOSCHLUESSEL = ModRegister.item("autoschluessel", de.moinmornhart.stinkendreich.auto.AutoschluesselItem::new,
+            new Item.Properties().stacksTo(1));
     /** Butler-Glöckchen: ruft den eigenen Butler herbei. */
     public static final Item BUTLERGLOCKE = ModRegister.item("butlerglocke",
             de.moinmornhart.stinkendreich.butler.ButlerglockeItem::new, new Item.Properties().stacksTo(1));

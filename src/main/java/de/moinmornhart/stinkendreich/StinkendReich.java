@@ -86,6 +86,7 @@ public class StinkendReich implements ModInitializer {
         // Vor der Villa, damit die Butler-Liste geladen ist, wenn die Villa ihren Butler einstellt
         ButlerVerwaltung.registrieren();
         VillaPlatzierung.registrieren();
+        de.moinmornhart.stinkendreich.villa.VillaNachruestung.registrieren();
         de.moinmornhart.stinkendreich.villa.VillaBaustelle.registrieren();
         VillaBefehle.registrieren();
         ButlerBefehle.registrieren();

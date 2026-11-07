@@ -274,6 +274,20 @@ def tex_zugangskarte():
     return img
 
 
+def tex_autoschluessel():
+    """Autoschlüssel: schwarzer Funkschlüssel mit goldenem Bart und rotem Knopf."""
+    img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.rounded_rectangle([2, 2, 8, 10], radius=2, fill=(24, 24, 28, 255), outline=(200, 160, 50, 255))
+    d.rectangle([4, 4, 6, 5], fill=(200, 40, 40, 255))           # Knopf zum Abschließen
+    d.point((5, 8), fill=(90, 90, 96, 255))
+    d.rectangle([7, 8, 13, 9], fill=(225, 185, 70, 255))         # Bart
+    d.point((11, 10), fill=(225, 185, 70, 255))
+    d.point((13, 10), fill=(225, 185, 70, 255))
+    d.line([(7, 9), (13, 9)], fill=(170, 130, 40, 255))
+    return img
+
+
 def tex_landmine():
     """Oberseite der Landmine: olivgrüner Stahl mit Nieten im Kreis."""
     img, d = neu((74, 80, 52))
@@ -904,6 +918,11 @@ def main() -> None:
         fabrik().save(pfad)
     (ASSETS / "textures/item").mkdir(parents=True, exist_ok=True)
     tex_zugangskarte().save(ASSETS / "textures/item/zugangskarte.png")
+    tex_autoschluessel().save(ASSETS / "textures/item/autoschluessel.png")
+    schreibe_json(ASSETS / "models/item/autoschluessel.json",
+                  {"parent": "minecraft:item/generated", "textures": {"layer0": f"{NS}:item/autoschluessel"}})
+    schreibe_json(ASSETS / "items/autoschluessel.json",
+                  {"model": {"type": "minecraft:model", "model": f"{NS}:item/autoschluessel"}})
 
     schreibe_json(ASSETS / "models/block/leer.json", LEER)
     werkzeuge: dict[str, list[str]] = {"pickaxe": [], "axe": []}

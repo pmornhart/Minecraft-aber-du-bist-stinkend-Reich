@@ -74,7 +74,7 @@ public final class Konfig {
     /** Höchstgeschwindigkeit des Hubschraubers in km/h. */
     public double hubschrauberTempo = 130.0;
     /** Höchstgeschwindigkeit, wenn der Butler chauffiert (km/h). */
-    public double chauffeurTempo = 60.0;
+    public double chauffeurTempo = 100.0;
     /**
      * Vor der ersten Fahrt zu einem weiter entfernten Ziel (Dorf, Endportal, Netherportal, Mine, gemerkte Orte)
      * baut der Chauffeur eine echte Straße dorthin, ausgehend vom Kreisel vor der Villa. Aus = er fährt querfeldein.
@@ -109,6 +109,9 @@ public final class Konfig {
     /** Optionaler GitHub-Token, nur nötig, falls das Repo privat ist. */
     public String githubToken = "";
 
+    /** Stand der Datei (für das Anpassen alter Standardwerte beim Laden, nicht von Hand ändern). */
+    public int konfigStand = 1;
+
     private Konfig() {
     }
 
@@ -125,6 +128,14 @@ public final class Konfig {
                 json.remove("_erklaerung");
                 Konfig geladen = GSON.fromJson(json, Konfig.class);
                 if (geladen != null) {
+                    if (!json.has("konfigStand")) {
+                        // Stand 1 (0.4.8): James darf als Chauffeur 100 km/h fahren (Philip: „der kann auch mal die 100
+                        // brettern“); der alte Standard 60 wird angehoben, eigene Werte bleiben
+                        if (geladen.chauffeurTempo == 60.0) {
+                            geladen.chauffeurTempo = 100.0;
+                        }
+                        geladen.konfigStand = 1;
+                    }
                     aktuell = geladen;
                 }
             }

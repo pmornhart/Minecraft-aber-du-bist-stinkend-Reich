@@ -52,7 +52,7 @@ public final class StrassenBau {
     static final BlockState ASPHALT = id("gray_concrete");
     /** Halbe Stufe in Asphaltfarbe (auch auf der Mittellinie, sonst wirkt die Steigung fleckig). */
     private static final BlockState ASPHALT_STUFE = Blocks.POLISHED_DEEPSLATE_SLAB.defaultBlockState();
-    private static final BlockState LINIE = id("white_concrete");
+    static final BlockState LINIE = id("white_concrete");
     /** Stufen älterer Straßen (vor 0.3.0), damit Abzweigungen sie überbauen dürfen. */
     private static final BlockState ALT_STUFE_1 = Blocks.POLISHED_ANDESITE_SLAB.defaultBlockState();
     private static final BlockState ALT_STUFE_2 = Blocks.SMOOTH_QUARTZ_SLAB.defaultBlockState();
@@ -336,6 +336,15 @@ public final class StrassenBau {
                 for (int h = 0; h <= 4; h++) {
                     // Eine andere Straße höher als diese: nicht darunter hindurch (sonst entsteht eine Unterführung)
                     // (außer am Ziel: die Zufahrt, an die sie anschließt, darf höher liegen)
+                    // Ebenso nicht dicht über eine andere Straße hinweg (1–4 Blöcke höher): die neue Fahrbahn läge in deren
+                    // Lichtraum; auf gleicher Höhe ist es eine Kreuzung, ab 5 Blöcken eine Brücke
+                    if (h >= 1 && o == 0 && !naheZiel(16)) {
+                        BlockState unten = welt.getBlockState(new BlockPos(bx, y - h, bz));
+                        if (unten.is(ASPHALT.getBlock()) || unten.is(LINIE.getBlock())) {
+                            letzteSperre = "andere Straße darunter bei " + bx + " " + (y - h) + " " + bz;
+                            return false;
+                        }
+                    }
                     if (h >= 1 && o == 0 && unterbauOderFahrbahn(welt.getBlockState(new BlockPos(bx, y + h, bz))) && !naheZiel(16)) {
                         letzteSperre = "andere Straße darüber bei " + bx + " " + (y + h) + " " + bz;
                         return false;
@@ -462,13 +471,16 @@ public final class StrassenBau {
                 if (gelaender && i % 8 == 0) {
                     // Pfeiler bis zum Grund
                     for (int h = y - 1; h >= Math.max(grund - (wasser ? 8 : 0), y - 64); h--) {
-                        if (!setzen(new BlockPos(bx, h, bz), UNTERBAU)) {
+                        if (ueberFahrbahn(bx, h, bz) || !setzen(new BlockPos(bx, h, bz), UNTERBAU)) {
                             break;
                         }
                     }
                 }
             } else {
                 for (int h = y - 1; h > grund; h--) {
+                    if (ueberFahrbahn(bx, h, bz)) {
+                        break;
+                    }
                     setzen(new BlockPos(bx, h, bz), UNTERBAU);
                 }
             }
@@ -631,6 +643,21 @@ public final class StrassenBau {
     private boolean zielBei(int[] platz) {
         int rand = 48;
         return ziel.x >= platz[0] - rand && ziel.x < platz[2] + rand && ziel.z >= platz[1] - rand && ziel.z < platz[3] + rand;
+    }
+
+    /**
+     * Liegt die Stelle im Lichtraum einer anderen Straße (höchstens 4 Blöcke über deren Fahrbahn)? Dort kommt kein
+     * Unterbau und kein Pfeiler hin – sonst standen Steinziegel mitten auf der unteren Straße (Philips Bild vom 07.11.:
+     * die Limo zwängte sich zwischen Pfeilern unter einer Brücke hindurch).
+     */
+    private boolean ueberFahrbahn(int bx, int h, int bz) {
+        for (int d = 1; d <= 4; d++) {
+            BlockState s = welt.getBlockState(new BlockPos(bx, h - d, bz));
+            if (s.is(ASPHALT.getBlock()) || s.is(LINIE.getBlock()) || s.is(ASPHALT_STUFE.getBlock())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Fahrbahn, Bordstein oder Unterbau einer Straße (nicht Stufen, Geländer, Laternen). */

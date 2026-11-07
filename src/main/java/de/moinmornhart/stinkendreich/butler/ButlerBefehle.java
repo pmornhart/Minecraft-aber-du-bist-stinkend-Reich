@@ -108,6 +108,30 @@ public final class ButlerBefehle {
                                     p.teleportTo(q.getX() + 0.5, q.getY() + 1, q.getZ() + 0.5);
                                     return 1;
                                 }))))
+                        // Testhilfe: Knöpfe des Automenüs für den nächsten Wagen (menue, schluessel, zu, auf, kofferraum, heim)
+                        .then(Commands.literal("auto").then(Commands.argument("aktion", StringArgumentType.word()).executes(k -> {
+                            ServerPlayer p = k.getSource().getPlayerOrException();
+                            var wagen = p.level().getEntitiesOfClass(de.moinmornhart.stinkendreich.auto.AutoEntity.class, p.getBoundingBox().inflate(24),
+                                            a -> !a.art.fliegt()).stream()
+                                    .min(java.util.Comparator.comparingDouble(a -> a.distanceToSqr(p))).orElse(null);
+                            if (wagen == null) {
+                                return 0;
+                            }
+                            switch (StringArgumentType.getString(k, "aktion")) {
+                                case "menue" -> de.moinmornhart.stinkendreich.auto.AutoMenue.oeffnen(p, wagen);
+                                case "schluessel" -> wagen.schluesselGeben(p);
+                                case "zu" -> wagen.verschliessen(true, p);
+                                case "auf" -> wagen.verschliessen(false, p);
+                                case "kofferraum" -> wagen.kofferraumOeffnen(p);
+                                case "heim" -> wagen.heimBringen(p);
+                                default -> {
+                                    return 0;
+                                }
+                            }
+                            de.moinmornhart.stinkendreich.StinkendReich.LOGGER.info("Autotest: Auto {} {} bei {} verschlossen={}",
+                                    StringArgumentType.getString(k, "aktion"), wagen.art.name, wagen.blockPosition().toShortString(), wagen.verschlossen());
+                            return 1;
+                        })))
                         // Testhilfe: vor einen Wegweiser stellen („/butler wegweiser 0“ = der große an der Zufahrt)
                         .then(Commands.literal("wegweiser").then(Commands.argument("nr", com.mojang.brigadier.arguments.IntegerArgumentType.integer(0)).executes(k -> {
                             ServerPlayer p = k.getSource().getPlayerOrException();
@@ -265,6 +289,18 @@ public final class ButlerBefehle {
     public record FahrZiel(Vec3 punkt, String name, Antwort antwort) {
     }
 
+    /**
+     * Lohnt sich der Hubschrauber statt der Limo? Ja, wenn man weit (über 80 Blöcke) vom Straßennetz entfernt steht und das
+     * Ziel mehr als 150 Blöcke weg ist: Dorthin führt keine Straße, die Limo käme nur querfeldein.
+     */
+    public static boolean besserFliegen(ServerPlayer p, Vec3 ziel) {
+        if (ziel == null || p.getVehicle() instanceof de.moinmornhart.stinkendreich.auto.AutoEntity) {
+            return false;
+        }
+        double weit = Math.hypot(ziel.x - p.getX(), ziel.z - p.getZ());
+        return weit > 150 && !de.moinmornhart.stinkendreich.strasse.Strassennetz.get(p.level().getServer()).amNetz(p.position());
+    }
+
     /** Fahr- oder Flugbefehl: Ziel bestimmen und den Butler losschicken (als Chauffeur oder Pilot). */
     private static Antwort fahren(ButlerEntity b, ServerPlayer p, String ziel, boolean fliegen) {
         // Weit weg „schläft“ der Butler (außerhalb der Simulationsweite): dann springt er zum Herrn
@@ -274,6 +310,12 @@ public final class ButlerBefehle {
         FahrZiel z = fahrZiel(b, p, ziel, fliegen);
         if (z.antwort().fehler()) {
             return z.antwort();
+        }
+        if (!fliegen && besserFliegen(p, z.punkt())) {
+            // Weit weg von jeder Straße (Philip: „wenn ich heimfliegen möchte, soll er mit dem Heli kommen“)
+            de.moinmornhart.stinkendreich.handy.Handy.heliHolen(p, b);
+            b.neueAuftraege(List.of(new FlugAuftrag(z.punkt(), z.name())));
+            return Antwort.ok("stinkendreich.butler.flug.statt_limo", z.name());
         }
         b.neueAuftraege(List.of(fliegen ? new FlugAuftrag(z.punkt(), z.name()) : new FahrAuftrag(z.punkt(), z.name())));
         return z.antwort();

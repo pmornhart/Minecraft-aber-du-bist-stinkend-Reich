@@ -1,0 +1,96 @@
+# Runde 0.4.8 (Philips Bilder vom 07.11.): Nachrüstung (Bar mit Personaleingang, VIP-Eingang, Kuppel ohne Glasblöcke),
+# Wegweiser, Treppe zur Mine, Autoschlüssel und Automenü, „Nach Hause bringen“ per Hubschrauber, Heli-Abholung aus der
+# Luft, Straßenwart gegen Wasser. Weltkoordinaten = Villa + (-56, 62, -56).
+# Für die Nachrüstung mit der ALTEN villa.nbt starten (siehe STAND.md), dann tauscht die Mod die Blöcke beim Laden.
+# Aufruf: tools/ingame/test.sh 26.3 tools/ingame/szenarien/runde048.txt
+warte 30
+server /gamemode creative @p
+server /time set 6000
+server /gamerule advance_time false
+merke anfang
+bis 120 Nachrüstung 048_bar_kuppel
+# --- Bar und Kuppel ---
+server /gamemode spectator @p
+taste F1
+server /tp @p -24.5 78 10.5 facing -20 79 13.5
+warte 6
+bild r01_bar_personaleingang
+server /tp @p -6.5 78.2 6.5 facing -5 79.5 15
+warte 4
+bild r02_vip_eingang
+server /tp @p -10.5 78 28.5 facing -4 78 35
+warte 4
+bild r03_kuppel_ohne_glas
+server /tp @p -2.5 78 28.5 facing -9 78 22
+warte 4
+bild r04_kuppel_tunnel
+taste F1
+server /gamemode creative @p
+# --- Autoschlüssel und Menü ---
+server /spreadplayers 5 110 0 1 false @p
+warte 3
+server /summon stinkendreich:stretchlimo ~3 ~ ~
+warte 2
+server /butler auto schluessel
+bis 10 Autotest: Auto schluessel
+server /butler auto zu
+bis 10 verschlossen=true
+warte 1
+bild r05_limo_abgeschlossen
+server /butler auto menue
+warte 2
+bild r06_automenue
+klient schliessen
+# --- Nach Hause bringen: James kommt mit dem Hubschrauber und trägt die Limo heim ---
+merke
+server /butler auto heim
+bis 60 abschleppen|Hubschrauber ab
+warte 12
+server /execute at @e[type=stinkendreich:stretchlimo,limit=1,sort=nearest] run tp @p ~12 ~4 ~12 facing entity @e[type=stinkendreich:stretchlimo,limit=1,sort=nearest]
+warte 3
+bild r07_heli_kommt
+warte 15
+server /execute at @e[type=stinkendreich:hubschrauber,limit=1,sort=nearest] run tp @p ~14 ~-3 ~14 facing entity @e[type=stinkendreich:hubschrauber,limit=1,sort=nearest]
+warte 2
+bild r08_limo_am_seil
+bis 400 Der Wagen steht wieder in der Garage
+warte 30
+# --- Heli-Abholung: der Hubschrauber kommt aus der Luft angeflogen ---
+server /item replace entity @p weapon.mainhand with stinkendreich:handy
+server /spreadplayers 0 300 0 1 false @p
+warte 8
+merke
+server /handy flieg|#villa
+warte 3
+server /execute at @e[type=stinkendreich:hubschrauber,limit=1,sort=nearest] run tp @p ~10 ~ ~10 facing entity @e[type=stinkendreich:hubschrauber,limit=1,sort=nearest]
+warte 1
+bild r09_heli_im_anflug
+bis 240 Der Hubschrauber steht bereit
+warte 2
+bild r10_heli_gelandet
+# --- Treppe zur Mine ---
+merke anfang
+bis 600 Treppe zu .*Mine.* fertig|keine Treppe zu .*Mine
+server /gamemode spectator @p
+taste F1
+server /butler strassenpunkt 1 99999
+warte 6
+server /execute at @p run tp @p ~ ~6 ~ facing ~ ~-10 ~1
+warte 4
+bild r11_treppe_mine
+taste F1
+server /gamemode creative @p
+# --- Straßenwart: Wasserquelle neben der Fahrbahn ---
+server /butler strassenpunkt 0 40
+warte 4
+merke
+server /execute at @p run setblock ~6 ~3 ~ minecraft:water
+warte 12
+bis 30 Straßenwart
+bild r12_strasse_trocken
+# --- Wegweiser ---
+server /gamemode spectator @p
+taste F1
+server /butler wegweiser 0
+warte 6
+bild r13_wegweiser
