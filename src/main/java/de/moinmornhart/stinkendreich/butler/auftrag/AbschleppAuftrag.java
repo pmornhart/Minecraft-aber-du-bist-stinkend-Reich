@@ -80,7 +80,7 @@ public class AbschleppAuftrag extends Auftrag {
                     Kompat.einsteigen(butler, heli);
                 }
                 double abstand = Math.hypot(wagen.getX() - heli.getX(), wagen.getZ() - heli.getZ());
-                if (abstand < 10 && heli.getY() > wagen.getY() + SEIL) {
+                if (abstand < 10) {        // die Höhe stellt ANHAENGEN selbst ein (vorher hing er knapp zu tief eine Minute fest)
                     wechseln(Phase.ANHAENGEN);
                 } else if (phasenTicks > 20 * 60) {
                     // Nach einer Minute noch nicht über dem Wagen (z. B. daneben gelandet oder hängt fest): direkt über den

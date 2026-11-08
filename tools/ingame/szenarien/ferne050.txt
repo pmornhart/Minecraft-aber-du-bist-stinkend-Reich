@@ -1,0 +1,11 @@
+# Auftrag aus der Ferne: du bist 700 Blöcke weg, James arbeitet trotzdem (sein Chunk bleibt geladen).
+# Aufruf: tools/ingame/test.sh 26.3 tools/ingame/szenarien/ferne050.txt
+warte 30
+server /gamemode creative @p
+server /time set 6000
+server /gamerule advance_time false
+server /tp @p 700 150 700
+warte 8
+merke
+server Butler, hol 4 Eisen in die Truhe
+bis 600 in die Truhe gelegt|Bitte sehr|Verzeihung|fehlt|habe ich nur

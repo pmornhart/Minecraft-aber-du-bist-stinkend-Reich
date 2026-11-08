@@ -189,8 +189,13 @@ public class ButlerEntity extends PathfinderMob {
                 statusSetzen();
             }
         }
-        if (tickCount % 20 == 7) {
-            chunkHalten();
+        // jeden Tick nachführen (kostet nur einen Vergleich): springt er per Teleport in einen anderen Chunk, muss der
+        // Ladebereich im selben Tick mit, sonst tickt er dort nicht mehr
+        chunkHalten();
+        // Testprotokoll: alle 10 Sekunden Ort und Auftrag (zeigt, ob er auch weit weg vom Herrn weiterarbeitet)
+        if (tickCount % 200 == 0 && istButler() && !auftraege.isEmpty() && de.moinmornhart.stinkendreich.dev.Autotest.aktiv()) {
+            de.moinmornhart.stinkendreich.StinkendReich.LOGGER.info("Autotest: James bei {} – {} (Chunk gehalten: {})",
+                    blockPosition().toShortString(), auftraege.peek().status().getString(), gehaltenerChunk != Long.MIN_VALUE);
         }
         if (entityData.get(AM_STEUER) != faehrtGerade()) {
             entityData.set(AM_STEUER, faehrtGerade());
@@ -351,29 +356,50 @@ public class ButlerEntity extends PathfinderMob {
         chunkHalten();
     }
 
-    /** Chunk, den James gerade geladen hält (Long.MIN_VALUE = keiner). */
+    /** Chunks (3 × 3 um James), die er gerade geladen hält. */
+    private final java.util.Set<Long> gehalteneChunks = new java.util.HashSet<>();
+    /** Mittlerer gehaltener Chunk (Long.MIN_VALUE = keiner). */
     private long gehaltenerChunk = Long.MIN_VALUE;
 
     /**
-     * Solange James Aufträge hat, bleibt sein Chunk geladen (der Ladeschein wandert mit ihm). Sonst stand er still, sobald
-     * der Herr weiter als die Simulationsweite weg war: Bestellungen wurden mit „Sehr wohl“ angenommen, aber nie
-     * ausgeführt (Philip, 08.11.: „manchmal braucht er extra lange“).
+     * Solange James Aufträge hat, bleiben die 3 × 3 Chunks um ihn geladen (der Bereich wandert mit). Sonst stand er still,
+     * sobald der Herr weiter als die Simulationsweite weg war: Bestellungen wurden mit „Sehr wohl“ angenommen, aber nie
+     * ausgeführt (Philip, 08.11.: „manchmal braucht er extra lange“). Ein einzelner Chunk reichte nicht – ging er über
+     * die Chunkgrenze, tickte er im Nachbarchunk nicht mehr und wurde ausgeladen. Im Hubschrauber hält der Hubschrauber
+     * selbst den Chunk (sonst würden sich beide gegenseitig den Ladeschein wegnehmen).
      */
     private void chunkHalten() {
         if (!(level() instanceof ServerLevel welt)) {
             return;
         }
         int cx = blockPosition().getX() >> 4, cz = blockPosition().getZ() >> 4;
-        long k = !auftraege.isEmpty() && !isRemoved() ? ((long) cx << 32) ^ (cz & 0xffffffffL) : Long.MIN_VALUE;
+        boolean halten = !auftraege.isEmpty() && !isRemoved()
+                && !(getVehicle() instanceof de.moinmornhart.stinkendreich.auto.HubschrauberEntity);
+        long k = halten ? ((long) cx << 32) ^ (cz & 0xffffffffL) : Long.MIN_VALUE;
         if (k == gehaltenerChunk) {
             return;
         }
-        if (gehaltenerChunk != Long.MIN_VALUE) {
-            welt.getChunkSource().updateChunkForced(new net.minecraft.world.level.ChunkPos((int) (gehaltenerChunk >> 32), (int) gehaltenerChunk), false);
+        java.util.Set<Long> neu = new java.util.HashSet<>();
+        if (halten) {
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dz = -1; dz <= 1; dz++) {
+                    neu.add(((long) (cx + dx) << 32) ^ ((cz + dz) & 0xffffffffL));
+                }
+            }
         }
-        if (k != Long.MIN_VALUE) {
-            welt.getChunkSource().updateChunkForced(new net.minecraft.world.level.ChunkPos(cx, cz), true);
+        for (long alt : gehalteneChunks) {
+            if (!neu.contains(alt)) {
+                welt.setChunkForced((int) (alt >> 32), (int) alt, false);
+            }
         }
+        for (long n : neu) {
+            if (!gehalteneChunks.contains(n)) {
+                // setChunkForced (wie beim Hubschrauber): damit ticken die Figuren im Chunk wirklich weiter
+                welt.setChunkForced((int) (n >> 32), (int) n, true);
+            }
+        }
+        gehalteneChunks.clear();
+        gehalteneChunks.addAll(neu);
         gehaltenerChunk = k;
     }
 

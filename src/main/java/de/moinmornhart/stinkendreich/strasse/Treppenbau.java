@@ -372,15 +372,18 @@ final class Treppenbau {
             }
             for (int h = -1; h <= 3; h++) {
                 BlockPos p = f.above(h);
+                if (spur && h == -1) {
+                    // Boden: gehört zur Treppe (frei() schließt ihn deshalb aus) – Marmorstufe bzw. Marmor am Absatz
+                    BlockState b = boden.get(p.asLong());
+                    if (b != null && darf(p)) {
+                        setzen(p, w == 0 && s.eben() && b == MARMOR ? GOLD : b);
+                    }
+                    continue;
+                }
                 if (!frei(p)) {
                     continue;
                 }
-                if (spur && h == -1) {
-                    BlockState b = boden.get(p.asLong());
-                    if (b != null) {
-                        setzen(p, w == 0 && s.eben() && b == MARMOR ? GOLD : b);
-                    }
-                } else if (spur && h == 3) {
+                if (spur && h == 3) {
                     if (!offen) {
                         setzen(p, w == 0 && i % 4 == 2 ? LICHT : MARMOR);
                     }
@@ -504,7 +507,7 @@ final class Treppenbau {
         if (stufen == null || stufen.isEmpty()) {
             return "keine Treppe";
         }
-        int versperrt = 0, ohneBoden = 0, wasser = 0;
+        int versperrt = 0, ohneBoden = 0, wasser = 0, naturboden = 0;
         BlockPos erste = null;
         for (TreppenPlan.Stufe s : stufen) {
             BlockPos c = new BlockPos(s.x(), s.y(), s.z());
@@ -516,6 +519,8 @@ final class Treppenbau {
             if (unten.getCollisionShape(welt, c.below()).isEmpty()) {
                 ohneBoden++;
                 erste = erste == null ? c : erste;
+            } else if (!luxus(unten) && darf(c.below())) {
+                naturboden++;                                  // begehbar, aber keine Marmorstufe
             }
         }
         for (BlockPos p : gangListe) {
@@ -526,8 +531,8 @@ final class Treppenbau {
         }
         TreppenPlan.Stufe l = stufen.get(stufen.size() - 1);
         boolean amZiel = l.x() == ziel.getX() && l.y() == ziel.getY() && l.z() == ziel.getZ();
-        return String.format("PRÜFUNG %s: %d Stufen, %d versperrt, %d ohne Boden, %d Wasser im Gang, Ziel %s%s",
-                versperrt + ohneBoden + wasser == 0 && amZiel ? "OK" : "FEHLER", stufen.size(), versperrt, ohneBoden, wasser,
+        return String.format("PRÜFUNG %s: %d Stufen, %d versperrt, %d ohne Boden, %d ohne Marmor, %d Wasser im Gang, Ziel %s%s",
+                versperrt + ohneBoden + wasser + naturboden == 0 && amZiel ? "OK" : "FEHLER", stufen.size(), versperrt, ohneBoden, naturboden, wasser,
                 amZiel ? "erreicht" : "verfehlt", erste == null ? "" : " (z. B. bei " + erste.toShortString() + ")");
     }
 

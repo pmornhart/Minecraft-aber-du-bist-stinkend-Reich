@@ -82,7 +82,7 @@ public final class ButlerVerwaltung {
         ServerLifecycleEvents.SERVER_STARTED.register(ButlerVerwaltung::laden);
         ServerLifecycleEvents.SERVER_STOPPING.register(s -> {
             for (Ruf r : RUFE) {
-                r.welt.getChunkSource().updateChunkForced(new net.minecraft.world.level.ChunkPos(r.cx, r.cz), false);
+                r.welt.setChunkForced(r.cx, r.cz, false);
             }
             RUFE.clear();
             speichern();
@@ -357,8 +357,8 @@ public final class ButlerVerwaltung {
             welt = server.overworld();
         }
         int cx = e.x >> 4, cz = e.z >> 4;
-        // Ladeschein ohne sofortiges, blockierendes Laden; Figuren laden danach im Hintergrund (kann dauern)
-        welt.getChunkSource().updateChunkForced(new net.minecraft.world.level.ChunkPos(cx, cz), true);
+        // Chunk zwangsladen; die Figuren darin laden danach im Hintergrund (kann dauern)
+        welt.setChunkForced(cx, cz, true);
         Ruf ruf = new Ruf(p.getUUID(), uuid, welt, cx, cz, server.getTickCount() + 300);
         ruf.folgen = folgen;
         if (danach != null) {
@@ -382,7 +382,7 @@ public final class ButlerVerwaltung {
             if (b == null && !abgelaufen) {
                 continue;
             }
-            r.welt.getChunkSource().updateChunkForced(new net.minecraft.world.level.ChunkPos(r.cx, r.cz), false);
+            r.welt.setChunkForced(r.cx, r.cz, false);
             it.remove();
             if (p == null) {
                 continue;

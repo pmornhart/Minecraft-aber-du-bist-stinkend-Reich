@@ -1,0 +1,41 @@
+# Leertaste im Hubschrauber: erst allein, dann mit James an Bord (ohne Auftrag). Freie Glasplattform am Himmel,
+# Höhe steht in der Anzeige „↑ … m“ im Bild. Aufruf: tools/ingame/test.sh 26.3 tools/ingame/szenarien/heli050.txt
+warte 25
+server /gamemode survival @p
+server /time set 6000
+server /fill 290 199 290 330 199 330 minecraft:glass
+server /tp @p 300 200 300
+warte 4
+server /summon stinkendreich:hubschrauber 300 200 304
+warte 2
+server /ride @p mount @e[type=stinkendreich:hubschrauber,limit=1,sort=nearest]
+warte 7
+server /execute as @e[type=stinkendreich:hubschrauber,limit=1,sort=nearest] run data get entity @s Pos[1]
+halte 4 space
+warte 3
+server /execute as @e[type=stinkendreich:hubschrauber,limit=1,sort=nearest] run data get entity @s Pos[1]
+taste F5
+warte 1
+bild hh01_allein
+taste F5
+warte 1
+taste F5
+server /ride @p dismount
+server /kill @e[type=stinkendreich:hubschrauber]
+server /tp @p 320 200 320
+warte 3
+server /summon stinkendreich:hubschrauber 320 200 324
+warte 2
+server /butler rufen
+warte 3
+server /ride @p mount @e[type=stinkendreich:hubschrauber,limit=1,sort=nearest]
+warte 1
+server /ride @e[type=stinkendreich:butler,limit=1,sort=nearest] mount @e[type=stinkendreich:hubschrauber,limit=1,sort=nearest]
+warte 7
+server /execute as @e[type=stinkendreich:hubschrauber,limit=1,sort=nearest] run data get entity @s Pos[1]
+halte 4 space
+warte 3
+server /execute as @e[type=stinkendreich:hubschrauber,limit=1,sort=nearest] run data get entity @s Pos[1]
+taste F5
+warte 1
+bild hh02_mit_james
