@@ -1,0 +1,62 @@
+# Trailer Teil 10 (0.5.0): neue Treppe in die Mine (3 breit, Absätze, Marmor und Gold), Abwehrgeschütze per Handy,
+# Abschleppen bis vor die Haustür. Neue Welt. Aufruf: SICHTWEITE=12 tools/ingame/test.sh 26.3 tools/ingame/szenarien/trailer10.txt
+server /gamemode creative
+server /time set 6000
+server /weather clear
+server /gamerule advance_time false
+warte 30
+merke anfang
+bis 900 Treppe zu .*Mine.* fertig|keine Treppe zu .*Mine
+# a) Treppe: Tor, Absatz, unten
+server /gamemode spectator @p
+taste F1
+server /butler treppenblick mine 0
+warte 6
+video start trailer10a
+kapitel Neu in 0.5.0: Treppe bis ganz hinunter in die Mine
+warte 4
+server /butler treppenblick mine 0.3
+warte 4
+server /butler treppenblick mine 0.6
+warte 4
+server /butler treppenblick mine 1
+warte 4
+video stopp
+# b) Abwehrgeschütze per Handy, ohne Festung
+taste F1
+server /gamemode creative @p
+server /item replace entity @p weapon.mainhand with stinkendreich:handy
+server /handy smart|anlage|geschuetze:an
+warte 2
+server /gamemode spectator @p
+taste F1
+server /villa ort 41 31 79 51 15
+warte 4
+video start trailer10b
+kapitel Sicherheit im Handy: Abwehrgeschütze auf Knopfdruck
+server /summon minecraft:vindicator -25.5 88 32.5 {PersistenceRequired:1b}
+server /summon minecraft:vindicator -23.5 88 34.5 {PersistenceRequired:1b}
+warte 12
+video stopp
+server /kill @e[type=minecraft:vindicator]
+server /handy smart|anlage|geschuetze:auto
+# c) Abschleppen bis vor die Haustür
+taste F1
+server /gamemode creative @p
+server /butler strassenpunkt 0 30
+warte 4
+server /execute at @p run summon stinkendreich:stretchlimo ~ ~ ~3
+warte 2
+server /butler auto schluessel
+server /gamemode spectator @p
+taste F1
+server /tp @p -8 98 30 facing -1 88 16
+warte 3
+merke
+server /butler auto heim
+bis 120 Abschleppen: Wagen am Seil
+video start trailer10c
+kapitel James bringt die Limo heim – bis vor die Haustür
+bis 120 Abschleppen: Wagen abgesetzt
+warte 3
+video stopp
