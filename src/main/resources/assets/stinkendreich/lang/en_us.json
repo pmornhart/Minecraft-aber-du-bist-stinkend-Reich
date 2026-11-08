@@ -733,5 +733,21 @@
   "stinkendreich.zugang.falscher_code": "Wrong code!",
   "stinkendreich.zugang.karte": "Card accepted – door open.",
   "stinkendreich.zugang.keine_karte": "No access card!",
-  "stinkendreich.zugang.verweigert": "Access denied."
+  "stinkendreich.zugang.verweigert": "Access denied.",
+  "stinkendreich.handy.sicherheit": "Security",
+  "stinkendreich.handy.titel.sicherheit": "Security",
+  "stinkendreich.handy.sh.alarmaus": "Turn alarm off",
+  "stinkendreich.handy.sh.stufe": "Alarm level: %s",
+  "stinkendreich.handy.sh.anlage.geschuetze": "Defence turrets",
+  "stinkendreich.handy.sh.anlage.laser": "Lasers",
+  "stinkendreich.handy.sh.anlage.melder": "Motion sensors",
+  "stinkendreich.handy.sh.anlage.sirenen": "Sirens & lights",
+  "stinkendreich.handy.sh.anlage.minen": "Land mines",
+  "stinkendreich.handy.sh.anlage.fallen": "Vault traps",
+  "stinkendreich.handy.sh.modus.auto": "Auto",
+  "stinkendreich.handy.sh.modus.an": "On",
+  "stinkendreich.handy.sh.modus.aus": "Off",
+  "stinkendreich.smarthome.anlage.auto": "%s now follow the alarm level.",
+  "stinkendreich.smarthome.anlage.an": "%s are now switched on.",
+  "stinkendreich.smarthome.anlage.aus": "%s are now switched off."
 }

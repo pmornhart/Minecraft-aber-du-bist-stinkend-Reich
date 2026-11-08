@@ -50,32 +50,8 @@ public final class Handy {
     private Handy() {
     }
 
-    /** Aufträge, die warten, bis James aus einem nicht geladenen Gebiet herbeigeholt ist: Spieler → (Aktion, Versuche). */
-    private static final java.util.Map<java.util.UUID, String[]> NACHHOLEN = new java.util.concurrent.ConcurrentHashMap<>();
-
     public static void registrieren() {
         Netz.bearbeiter("handy", 0, (spieler, pos, wert) -> ausfuehren(spieler, wert));
-        // Stand James weit weg (z. B. nach einem Flug auf dem Landeplatz, nicht geladen), holt butler() ihn erst herbei.
-        // Der Auftrag wartet dann, bis er da ist (jede Sekunde nachsehen, höchstens 10 Sekunden) – vorher ging er verloren.
-        net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(server -> {
-            if (server.getTickCount() % 20 != 0 || NACHHOLEN.isEmpty()) {
-                return;
-            }
-            for (var it = NACHHOLEN.entrySet().iterator(); it.hasNext(); ) {
-                var e = it.next();
-                ServerPlayer p = server.getPlayerList().getPlayer(e.getKey());
-                int versuche = Integer.parseInt(e.getValue()[1]) + 1;
-                if (p == null || versuche > 10) {
-                    de.moinmornhart.stinkendreich.StinkendReich.LOGGER.info("Handy: „{}“ verworfen, James kam nicht", e.getValue()[0]);
-                    it.remove();
-                } else if (ButlerVerwaltung.vonSpieler(p) != null) {
-                    it.remove();
-                    ausfuehren(p, e.getValue()[0]);
-                } else {
-                    e.setValue(new String[]{e.getValue()[0], String.valueOf(versuche)});
-                }
-            }
-        });
         // Dasselbe als Befehl, für Spieler ohne Mod (die Knöpfe des Handy-Dialogs, siehe server/HandyDialog)
         net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback.EVENT.register((befehle, registry, umgebung) -> befehle.register(
                 net.minecraft.commands.Commands.literal("handy").then(net.minecraft.commands.Commands
@@ -160,13 +136,30 @@ public final class Handy {
             default -> {
             }
         }
-        ButlerEntity b = butler(p);
+        ButlerEntity b = ButlerVerwaltung.vonSpieler(p);
         de.moinmornhart.stinkendreich.StinkendReich.LOGGER.info("Handy: „{}“ von {}, James {}", wert, p.getScoreboardName(),
                 b == null ? "wird erst geholt" : "bei " + b.blockPosition().toShortString() + (b.getVehicle() != null ? " (sitzt in " + b.getVehicle().getType().toShortString() + ")" : ""));
         if (b == null) {
-            NACHHOLEN.put(p.getUUID(), new String[]{wert, "0"});
+            if (was.equals("orte")) {
+                orteSenden(p, null);                          // nur ansehen: dafür James nicht herbeirufen
+                return;
+            }
+            // James ist nicht geladen: der Auftrag wird ausgeführt, sobald er da ist (auch wenn das Handy dann
+            // nicht mehr in der Hand ist – vorher ging er dabei still verloren)
+            ButlerVerwaltung.mitButler(p, bb -> {
+                try {
+                    butlerAktion(p, bb, was, angabe);
+                } catch (RuntimeException ex) {
+                    de.moinmornhart.stinkendreich.StinkendReich.LOGGER.error("Handy-Aktion „{}“ fehlgeschlagen", wert, ex);
+                }
+            });
             return;
         }
+        butlerAktion(p, b, was, angabe);
+    }
+
+    /** Aktionen, für die James gebraucht wird (er ist geladen). */
+    private static void butlerAktion(ServerPlayer p, ButlerEntity b, String was, String angabe) {
         switch (was) {
             case "anruf" -> {
                 if (angabe.equals("heli")) {
@@ -243,7 +236,9 @@ public final class Handy {
         for (String herr : andereVillen(p)) {
             zeilen.add("#villa:" + herr);
         }
-        zeilen.addAll(new java.util.TreeSet<>(b.orte().keySet()));
+        if (b != null) {
+            zeilen.addAll(new java.util.TreeSet<>(b.orte().keySet()));
+        }
         Netz.melden(p, "orte", String.join("\n", zeilen));
     }
 
@@ -259,15 +254,5 @@ public final class Handy {
             }
         }
         return namen;
-    }
-
-    /** Der Butler des Spielers; hat er noch keinen, wird er jetzt eingestellt. */
-    private static ButlerEntity butler(ServerPlayer p) {
-        ButlerEntity b = ButlerVerwaltung.vonSpieler(p);
-        if (b == null) {
-            ButlerVerwaltung.rufen(p);
-            b = ButlerVerwaltung.vonSpieler(p);
-        }
-        return b;
     }
 }

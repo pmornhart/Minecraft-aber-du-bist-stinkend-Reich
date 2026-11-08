@@ -96,6 +96,23 @@ public final class HandyDialog {
                 }
                 zurueck(knoepfe);
             }
+            case "sicherheit" -> {
+                // Alarmanlage übers Handy: Stufe 0–4, Alarm aus, jede Anlage auf Auto/An/Aus
+                titel = "sicherheit";
+                for (int i = 0; i <= 4; i++) {
+                    knoepfe.add(new ActionButton(new CommonButtonData(Component.translatable("stinkendreich.handy.sh.stufe",
+                            Component.translatable("stinkendreich.stufe." + i)), BREITE), Optional.of(befehl("smart|stufe|" + i))));
+                }
+                knopf(knoepfe, "sh.alarmaus", "smart|alarmaus");
+                for (String a : de.moinmornhart.stinkendreich.mechanik.SmartHome.ANLAGEN) {
+                    for (String m : new String[]{"auto", "an", "aus"}) {
+                        knoepfe.add(new ActionButton(new CommonButtonData(Component.translatable("stinkendreich.handy.sh.anlage." + a)
+                                .append(": ").append(Component.translatable("stinkendreich.handy.sh.modus." + m)), BREITE),
+                                Optional.of(befehl("smart|anlage|" + a + ":" + m))));
+                    }
+                }
+                zurueck(knoepfe);
+            }
             case "gaeste" -> {
                 titel = "gaeste";
                 var z = de.moinmornhart.stinkendreich.mechanik.VillaZustand.vonSpieler(spieler.level().getServer(), spieler);
@@ -138,6 +155,7 @@ public final class HandyDialog {
                 knopf(knoepfe, "bodyguards", "bodyguards|rufen");
                 knopf(knoepfe, "bodyguards_heim", "bodyguards|heim");
                 knopf(knoepfe, "smarthome", "seite|smarthome");
+                knopf(knoepfe, "sicherheit", "seite|sicherheit");
                 knopf(knoepfe, "gaeste", "seite|gaeste");
             }
         }

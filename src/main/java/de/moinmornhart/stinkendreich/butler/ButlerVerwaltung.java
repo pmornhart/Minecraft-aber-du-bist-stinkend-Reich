@@ -52,8 +52,28 @@ public final class ButlerVerwaltung {
     }
 
     /** Ein laufender Ruf: Der Chunk des Butlers wird kurz geladen, bis er auftaucht. */
-    private record Ruf(UUID spieler, UUID butler, ServerLevel welt, int cx, int cz, long bis) {
+    /**
+     * Ein Butler, auf dessen Laden gewartet wird. {@code folgen}: ausdrücklich gerufen (herbeiholen, dann folgt er);
+     * {@code danach}: Aufträge, die ausgeführt werden, sobald er da ist (nichts geht verloren).
+     */
+    private static final class Ruf {
+        final UUID spieler, butler;
+        final ServerLevel welt;
+        final int cx, cz;
+        long bis;
+        boolean folgen;
+        final List<java.util.function.Consumer<ButlerEntity>> danach = new ArrayList<>();
+
+        Ruf(UUID spieler, UUID butler, ServerLevel welt, int cx, int cz, long bis) {
+            this.spieler = spieler;
+            this.butler = butler;
+            this.welt = welt;
+            this.cx = cx;
+            this.cz = cz;
+            this.bis = bis;
+        }
     }
+
 
     private ButlerVerwaltung() {
     }
@@ -62,7 +82,7 @@ public final class ButlerVerwaltung {
         ServerLifecycleEvents.SERVER_STARTED.register(ButlerVerwaltung::laden);
         ServerLifecycleEvents.SERVER_STOPPING.register(s -> {
             for (Ruf r : RUFE) {
-                r.welt().setChunkForced(r.cx(), r.cz(), false);
+                r.welt.getChunkSource().updateChunkForced(new net.minecraft.world.level.ChunkPos(r.cx, r.cz), false);
             }
             RUFE.clear();
             speichern();
@@ -268,6 +288,24 @@ public final class ButlerVerwaltung {
      * Steht er in einem nicht geladenen Gebiet, wird es kurz geladen.
      */
     public static void rufen(ServerPlayer p) {
+        rufen(p, true, null);
+    }
+
+    /**
+     * Führt {@code danach} mit dem Butler des Spielers aus: sofort, wenn er geladen ist, sonst sobald er geladen wurde –
+     * ohne ihn herbeizuteleportieren (seine Aufträge bringen ihn hin). Vorher gingen Bestellungen an einen nicht
+     * geladenen James verloren („Sie haben noch keinen Butler“), und man musste zweimal bestellen.
+     */
+    public static void mitButler(ServerPlayer p, java.util.function.Consumer<ButlerEntity> danach) {
+        ButlerEntity b = vonSpieler(p);
+        if (b != null) {
+            danach.accept(b);
+            return;
+        }
+        rufen(p, false, danach);
+    }
+
+    private static void rufen(ServerPlayer p, boolean folgen, java.util.function.Consumer<ButlerEntity> danach) {
         MinecraftServer server = p.level().getServer();
         Eintrag e = EINTRAEGE.get(p.getUUID().toString());
         if (e == null) {
@@ -280,14 +318,33 @@ public final class ButlerVerwaltung {
                 EINTRAEGE.put(p.getUUID().toString(), eintrag(b));
                 speichern();
                 b.sagen(Component.translatable("stinkendreich.butler.hallo", p.getDisplayName()));
+                if (danach != null) {
+                    danach.accept(b);
+                }
             }
             return;
         }
         UUID uuid = UUID.fromString(e.butler);
         ButlerEntity b = finden(server, uuid);
         if (b != null) {
-            herbei(b, p);
+            if (folgen) {
+                herbei(b, p, true);
+            }
+            if (danach != null) {
+                danach.accept(b);
+            }
             return;
+        }
+        // Wird er schon geholt? Dann nur anhängen (vorher: jeder Druck ein neuer Ruf, „Zur Stelle“ doppelt)
+        for (Ruf r : RUFE) {
+            if (r.butler.equals(uuid)) {
+                r.folgen |= folgen;
+                if (danach != null) {
+                    r.danach.add(danach);
+                }
+                Kompat.nachricht(p, Component.translatable("stinkendreich.butler.unterwegs"), true);
+                return;
+            }
         }
         // Nicht geladen: Chunk kurz zwangsladen, bis der Butler auftaucht (höchstens 5 Sekunden)
         ServerLevel welt = null;
@@ -300,37 +357,60 @@ public final class ButlerVerwaltung {
             welt = server.overworld();
         }
         int cx = e.x >> 4, cz = e.z >> 4;
-        welt.setChunkForced(cx, cz, true);
-        RUFE.add(new Ruf(p.getUUID(), uuid, welt, cx, cz, server.getTickCount() + 100));
+        // Ladeschein ohne sofortiges, blockierendes Laden; Figuren laden danach im Hintergrund (kann dauern)
+        welt.getChunkSource().updateChunkForced(new net.minecraft.world.level.ChunkPos(cx, cz), true);
+        Ruf ruf = new Ruf(p.getUUID(), uuid, welt, cx, cz, server.getTickCount() + 300);
+        ruf.folgen = folgen;
+        if (danach != null) {
+            ruf.danach.add(danach);
+        }
+        RUFE.add(ruf);
         Kompat.nachricht(p, Component.translatable("stinkendreich.butler.unterwegs"), true);
     }
 
     private static void rufeBearbeiten(MinecraftServer server) {
         for (Iterator<Ruf> it = RUFE.iterator(); it.hasNext(); ) {
             Ruf r = it.next();
-            ButlerEntity b = finden(server, r.butler());
-            ServerPlayer p = server.getPlayerList().getPlayer(r.spieler());
-            boolean abgelaufen = server.getTickCount() > r.bis();
+            ButlerEntity b = finden(server, r.butler);
+            ServerPlayer p = server.getPlayerList().getPlayer(r.spieler);
+            boolean abgelaufen = server.getTickCount() > r.bis;
+            // Abgelaufen, aber die Figuren des Chunks sind noch gar nicht geladen (langsame Platte): weiter warten,
+            // statt einen zweiten James einzustellen (höchstens noch einmal 15 Sekunden)
+            if (b == null && abgelaufen && !Kompat.ganzGeladen(r.welt, new net.minecraft.core.BlockPos(r.cx << 4, 64, r.cz << 4)) && server.getTickCount() < r.bis + 300) {
+                continue;
+            }
             if (b == null && !abgelaufen) {
                 continue;
             }
-            r.welt().setChunkForced(r.cx(), r.cz(), false);
+            r.welt.getChunkSource().updateChunkForced(new net.minecraft.world.level.ChunkPos(r.cx, r.cz), false);
             it.remove();
             if (p == null) {
                 continue;
             }
             if (b != null) {
-                herbei(b, p);
+                if (r.folgen) {
+                    herbei(b, p, true);
+                }
+                for (var d : r.danach) {
+                    d.accept(b);
+                }
             } else {
                 // Verschollen (z. B. mit /kill entfernt): neuen Butler einstellen
                 EINTRAEGE.remove(p.getUUID().toString());
-                rufen(p);
+                java.util.function.Consumer<ButlerEntity> alle = neu -> r.danach.forEach(d -> d.accept(neu));
+                rufen(p, r.folgen, r.danach.isEmpty() ? null : alle);
             }
         }
     }
 
-    /** Holt einen geladenen Butler zum Spieler, auch über Dimensionen hinweg. */
-    private static void herbei(ButlerEntity b, ServerPlayer p) {
+    /**
+     * Holt einen geladenen Butler zum Spieler, auch über Dimensionen hinweg. Ausdrücklich gerufen ({@code folgen}): Er
+     * lässt die laufende Arbeit liegen und folgt (vorher lief er nach „Zur Stelle“ gleich zurück zu Tunnel oder Ofen).
+     */
+    private static void herbei(ButlerEntity b, ServerPlayer p, boolean folgen) {
+        if (folgen && !b.untaetig() && !b.faehrtGerade()) {
+            b.stopp();
+        }
         if (b.level() != p.level()) {
             Kompat.befehl(p.level().getServer(), String.format(Locale.ROOT, "execute in %s run tp %s %.2f %.2f %.2f",
                     Kompat.schluesselId(p.level().dimension()), b.getUUID(), p.getX(), p.getY(), p.getZ()));

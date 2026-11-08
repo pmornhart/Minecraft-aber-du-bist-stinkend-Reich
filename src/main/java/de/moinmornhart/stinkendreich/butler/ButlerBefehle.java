@@ -132,6 +132,14 @@ public final class ButlerBefehle {
                                     StringArgumentType.getString(k, "aktion"), wagen.art.name, wagen.blockPosition().toShortString(), wagen.verschlossen());
                             return 1;
                         })))
+                        // Treppen prüfen: Stufe für Stufe frei, trocken, bis ins Ziel? (Ergebnis im Chat und im Protokoll)
+                        .then(Commands.literal("treppenpruefen").executes(k -> {
+                            for (String z : de.moinmornhart.stinkendreich.strasse.Strassennetz.get(k.getSource().getServer()).treppenPruefen()) {
+                                de.moinmornhart.stinkendreich.StinkendReich.LOGGER.info("Treppe {}", z);
+                                k.getSource().sendSuccess(() -> net.minecraft.network.chat.Component.literal(z), false);
+                            }
+                            return 1;
+                        }))
                         // Testhilfe: auf eine Treppe stellen („/butler treppenblick mine 0“ = oben am Tor, 1 = unten)
                         .then(Commands.literal("treppenblick").then(Commands.argument("ziel", StringArgumentType.word())
                                 .then(Commands.argument("anteil", com.mojang.brigadier.arguments.DoubleArgumentType.doubleArg(0, 1)).executes(k -> {
@@ -265,15 +273,18 @@ public final class ButlerBefehle {
     public static void verarbeiten(ServerPlayer spieler, String text, boolean ausMenue) {
         ButlerEntity b = ButlerVerwaltung.vonSpieler(spieler);
         if (b == null) {
-            Kompat.nachricht(spieler, Component.translatable("stinkendreich.butler.keiner").withStyle(ChatFormatting.YELLOW), false);
-            ButlerVerwaltung.rufen(spieler);
+            // Nicht geladen (weit weg) oder noch keiner: der Auftrag wartet, bis er da ist, statt verloren zu gehen
+            ButlerVerwaltung.mitButler(spieler, bb -> verarbeiten(spieler, text, ausMenue));
             return;
         }
-        if (ButlerKI.aktiv()) {
+        // Erst die eingebaute Sprachsteuerung (sofort); Claude nur, wenn sie den Satz nicht versteht – sonst wartete
+        // jeder einfache Auftrag mehrere Sekunden auf die Antwort aus dem Netz
+        Sprache.Befehl verstanden = Sprache.verstehen(text);
+        if (ButlerKI.aktiv() && verstanden.art() == Sprache.Art.UNBEKANNT) {
             ButlerKI.anfragen(b, spieler, text);
             return;
         }
-        ausfuehren(b, spieler, Sprache.verstehen(text));
+        ausfuehren(b, spieler, verstanden);
     }
 
     /** Antwort des Butlers auf einen Auftrag; {@code fehler}, wenn er ihn nicht ausführen kann. */
@@ -286,8 +297,7 @@ public final class ButlerBefehle {
     /** Führt einen verstandenen Auftrag aus und lässt den Butler antworten. */
     public static void ausfuehren(ButlerEntity b, ServerPlayer p, Sprache.Befehl bf) {
         if (b == null) {
-            Kompat.nachricht(p, Component.translatable("stinkendreich.butler.keiner").withStyle(ChatFormatting.YELLOW), false);
-            ButlerVerwaltung.rufen(p);
+            ButlerVerwaltung.mitButler(p, bb -> ausfuehren(bb, p, bf));
             return;
         }
         b.sagen(befolgen(b, p, bf).text());
@@ -488,10 +498,17 @@ public final class ButlerBefehle {
                 return Antwort.ok("stinkendreich.butler.sortiert.los");
             }
             case FOLGEN -> {
+                // Läuft er gerade nach Hause oder zu einem Ort, bricht er das ab (sonst bestätigte er nur und ging weiter)
+                if (b.aktuellerAuftrag() instanceof de.moinmornhart.stinkendreich.butler.auftrag.GehAuftrag) {
+                    b.stopp();
+                }
                 b.setzeFolgen(true);
                 return Antwort.ok("stinkendreich.butler.folgen");
             }
             case BLEIBEN -> {
+                if (b.aktuellerAuftrag() instanceof de.moinmornhart.stinkendreich.butler.auftrag.GehAuftrag) {
+                    b.stopp();
+                }
                 b.setzeFolgen(false);
                 b.setzeZuhause(b.blockPosition());
                 return Antwort.ok("stinkendreich.butler.bleiben");

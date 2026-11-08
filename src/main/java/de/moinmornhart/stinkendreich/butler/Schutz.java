@@ -42,17 +42,20 @@ public final class Schutz {
         return istNatuerlich(zustand);
     }
 
-    /** Liegt die Position auf dem Villa-Grundstück (mit Sicherheitsabstand)? */
+    /** Liegt die Position auf dem Grundstück irgendeiner Villa (mit Sicherheitsabstand)? Gilt für alle Villen der Welt. */
     public static boolean inDerVilla(Level welt, BlockPos pos) {
         if (welt.dimension() != Level.OVERWORLD) {
             return false;
         }
-        return VillaPlatzierung.villa().map(v -> {
+        for (VillaPlatzierung.VillaInfo v : VillaPlatzierung.alle()) {
             BlockPos u = v.ursprung();
-            return pos.getX() >= u.getX() - VILLA_ABSTAND && pos.getX() < u.getX() + v.plan().breiteX + VILLA_ABSTAND
+            if (pos.getX() >= u.getX() - VILLA_ABSTAND && pos.getX() < u.getX() + v.plan().breiteX + VILLA_ABSTAND
                     && pos.getZ() >= u.getZ() - VILLA_ABSTAND && pos.getZ() < u.getZ() + v.plan().breiteZ + VILLA_ABSTAND
-                    && pos.getY() >= u.getY() - VILLA_ABSTAND && pos.getY() < u.getY() + v.plan().hoehe + VILLA_ABSTAND;
-        }).orElse(false);
+                    && pos.getY() >= u.getY() - VILLA_ABSTAND && pos.getY() < u.getY() + v.plan().hoehe + VILLA_ABSTAND) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Kommt dieser Block so in der Natur vor? Alles andere gilt als gebaut. */

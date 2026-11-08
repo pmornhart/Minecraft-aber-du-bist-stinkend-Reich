@@ -122,7 +122,7 @@ public final class Planer {
                 }
                 case ESSEN -> {
                     // Erst die Speisekammer, den Rest jagen und braten
-                    int vorrat = Math.min(fehlt, VorratAuftrag.imVorrat(butler.level(), quelleId));
+                    int vorrat = Math.min(fehlt, VorratAuftrag.imVorrat(butler, quelleId));
                     if (vorrat > 0) {
                         plan.add(new VorratAuftrag(quelleId, vorrat));
                         hinzu(quelleId, vorrat);
@@ -153,7 +153,7 @@ public final class Planer {
     private boolean brennstoffSichern(int stueck) {
         int brauche = (stueck + 7) / 8;
         int imVorrat = 0;
-        for (var p : Umgebung.villaMarken(butler.level(), "brennstoff")) {
+        for (var p : Umgebung.villaMarken(butler, "brennstoff")) {
             if (butler.level().getBlockEntity(p) instanceof Container c) {
                 imVorrat += Taschen.zaehlen(c, s -> s.is(Items.COAL) || s.is(Items.CHARCOAL));
             }

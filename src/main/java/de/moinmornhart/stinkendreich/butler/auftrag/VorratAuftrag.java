@@ -32,10 +32,14 @@ public class VorratAuftrag extends Auftrag {
     }
 
     /** Wie viel davon gerade im Vorrat der Villa liegt. */
-    public static int imVorrat(Level welt, String quelle) {
+    public static int imVorrat(ButlerEntity butler, String quelle) {
         Quellen.Quelle q = Quellen.get(quelle);
+        if (q == null) {
+            return 0;
+        }
+        Level welt = butler.level();
         int n = 0;
-        for (BlockPos p : Umgebung.villaMarken(welt, "vorrat")) {
+        for (BlockPos p : Umgebung.villaMarken(butler, "vorrat")) {
             if (welt.getBlockEntity(p) instanceof Container c) {
                 n += Taschen.zaehlen(c, q.passt());
             }
@@ -46,7 +50,7 @@ public class VorratAuftrag extends Auftrag {
     @Override
     protected Stand tick(ButlerEntity butler) {
         Quellen.Quelle q = Quellen.get(quelle);
-        List<BlockPos> truhen = Umgebung.villaMarken(butler.welt(), "vorrat");
+        List<BlockPos> truhen = Umgebung.villaMarken(butler, "vorrat");
         if (q == null || geholt >= menge || truheIndex >= truhen.size()) {
             return Stand.FERTIG;
         }

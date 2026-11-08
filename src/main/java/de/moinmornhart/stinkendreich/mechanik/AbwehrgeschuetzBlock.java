@@ -45,7 +45,7 @@ public class AbwehrgeschuetzBlock extends MechanikBlock {
     @Override
     public void takt(ServerLevel welt, BlockPos pos, BlockState zustand, MechanikBlockEntity daten) {
         VillaZustand z = VillaZustand.fuer(welt.getServer(), pos);
-        boolean aktiv = Festung.bereit(z, pos, true);
+        boolean aktiv = SmartHome.wahl(z, "geschuetze", Festung.bereit(z, pos, true));
         if (aktiv != zustand.getValue(Eigenschaften.AN)) {
             // Ausfahren bzw. Einfahren: Kopf mit den Läufen hebt sich aus dem Sockel
             welt.setBlock(pos, zustand.setValue(Eigenschaften.AN, aktiv), 3);

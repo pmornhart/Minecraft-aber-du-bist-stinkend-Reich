@@ -43,8 +43,8 @@ public class LaserSenderBlock extends MechanikBlock {
     public void takt(ServerLevel welt, BlockPos pos, BlockState zustand, MechanikBlockEntity daten) {
         VillaZustand z = VillaZustand.fuer(welt.getServer(), pos);
         // Himmelslaser (nach oben) fahren in der Festung als Welle rund um die Villa hoch
-        boolean an = z.stufe() >= 3 && (zustand.getValue(Eigenschaften.RICHTUNG_ALLE) != Direction.UP || !z.festung()
-                || Festung.bereit(z, pos, true));
+        boolean an = SmartHome.wahl(z, "laser", z.stufe() >= 3 && (zustand.getValue(Eigenschaften.RICHTUNG_ALLE) != Direction.UP
+                || !z.festung() || Festung.bereit(z, pos, true)));
         Direction richtung = zustand.getValue(Eigenschaften.RICHTUNG_ALLE);
         BlockState strahl = ModBloecke.LASERSTRAHL.defaultBlockState().setValue(LaserstrahlBlock.ACHSE, richtung.getAxis());
 

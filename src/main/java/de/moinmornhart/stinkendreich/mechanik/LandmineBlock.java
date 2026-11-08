@@ -50,7 +50,7 @@ public class LandmineBlock extends MechanikBlock {
     @Override
     public void takt(ServerLevel welt, BlockPos pos, BlockState zustand, MechanikBlockEntity daten) {
         VillaZustand z = VillaZustand.fuer(welt.getServer(), pos);
-        boolean scharf = Festung.bereit(z, pos, false);
+        boolean scharf = SmartHome.wahl(z, "minen", Festung.bereit(z, pos, false));
         boolean licht = scharf;                                     // rotes Licht = scharf
         if (licht != zustand.getValue(Eigenschaften.LEUCHTET)) {
             welt.setBlock(pos, zustand.setValue(Eigenschaften.LEUCHTET, licht), 3);

@@ -27,7 +27,7 @@ public class HandyBildschirm extends Screen {
     /** Etwas flachere Schalter auf der Smart-Home-Seite, damit alle zehn plus Farben passen. */
     private static final int SMART_H = 16;
 
-    private enum Seite { START, NAVI, REISE, ORTE, LIEFERUNG, AUFTRAG, SMART, GAESTE }
+    private enum Seite { START, NAVI, REISE, ORTE, LIEFERUNG, AUFTRAG, SMART, SICHERHEIT, GAESTE }
 
     /** Höchstens so viele eigene Orte passen auf eine Seite. */
     private static final int ORTE_MAX = 7;
@@ -42,6 +42,11 @@ public class HandyBildschirm extends Screen {
             {"tor", "▥", "zu", "auf"}, {"garage", "▦", "zu", "auf"}};
     /** Zustand der Smart-Home-Schalter (schickt der Server, siehe {@link #smartEmpfangen}). */
     private static final java.util.Map<String, Boolean> smartZustand = new java.util.HashMap<>();
+    /** Dieselben Werte als Text (Alarmstufe, Einstellung der Sicherheitsanlagen „auto/an/aus“). */
+    private static final java.util.Map<String, String> smartWerte = new java.util.HashMap<>();
+    /** Sicherheitsanlagen mit Symbol (Reihenfolge wie {@code SmartHome.ANLAGEN}). */
+    private static final String[][] ANLAGEN = {{"geschuetze", "✦"}, {"laser", "≋"}, {"melder", "◎"}, {"sirenen", "♪"},
+            {"minen", "✸"}, {"fallen", "▣"}};
 
     private Seite seite = Seite.START;
     /** Gewähltes Navi-Ziel, solange auf der Seite REISE noch Limo oder Hubschrauber gewählt wird. */
@@ -78,6 +83,7 @@ public class HandyBildschirm extends Screen {
                 y = knopf(x, y, "bodyguards", () -> senden("bodyguards|rufen"));
                 y = knopf(x, y, "bodyguards_heim", () -> senden("bodyguards|heim"));
                 y = knopf(x, y, "smarthome", () -> wechseln(Seite.SMART));
+                y = knopf(x, y, "sicherheit", () -> wechseln(Seite.SICHERHEIT));
                 knopf(x, y, "gaeste", () -> wechseln(Seite.GAESTE));
             }
             case NAVI -> {
@@ -192,6 +198,46 @@ public class HandyBildschirm extends Screen {
                 }
                 knopf(x, oben() + HOEHE - 30, "zurueck", () -> wechseln(Seite.START));
             }
+            case SICHERHEIT -> {
+                // Alarmanlage übers Handy (Philip, 08.11.): Alarmstufe 0–4 (4 = Festung), Alarm aus und jede Anlage einzeln:
+                // Auto (folgt der Stufe) → An (immer scharf, auch ohne Festung) → Aus. Nur der Eigentümer darf umschalten.
+                int stufe = parse(smartWerte.getOrDefault("stufe", "0"));
+                int sb = (KNOPF_B - 4 * 2) / 5;
+                for (int i = 0; i <= 4; i++) {
+                    int st = i;
+                    Component t = Component.literal(String.valueOf(i)).withStyle(i == stufe
+                            ? (i == 4 ? ChatFormatting.RED : ChatFormatting.GREEN) : ChatFormatting.GRAY);
+                    Button b = Button.builder(t, k -> anfragen("smart|stufe|" + st)).bounds(x + i * (sb + 2), y, sb, SMART_H).build();
+                    b.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.translatable("stinkendreich.stufe." + i)));
+                    addRenderableWidget(b);
+                }
+                y += SMART_H + 4;
+                boolean alarm = "1".equals(smartWerte.get("alarm"));
+                addRenderableWidget(Button.builder(Component.translatable("stinkendreich.handy.sh.alarmaus")
+                                .withStyle(alarm ? ChatFormatting.RED : ChatFormatting.GRAY), k -> anfragen("smart|alarmaus"))
+                        .bounds(x, y, KNOPF_B, SMART_H).build());
+                y += SMART_H + 6;
+                for (String[] a : ANLAGEN) {
+                    String modus = smartWerte.getOrDefault("anlage_" + a[0], "auto");
+                    String naechster = switch (modus) {
+                        case "auto" -> "an";
+                        case "an" -> "aus";
+                        default -> "auto";
+                    };
+                    ChatFormatting farbe = switch (modus) {
+                        case "an" -> ChatFormatting.GREEN;
+                        case "aus" -> ChatFormatting.RED;
+                        default -> ChatFormatting.AQUA;
+                    };
+                    Component text = Component.literal(a[1] + " ").withStyle(ChatFormatting.GOLD)
+                            .append(Component.translatable("stinkendreich.handy.sh.anlage." + a[0]).withStyle(ChatFormatting.WHITE))
+                            .append(Component.literal("  ")).append(Component.translatable("stinkendreich.handy.sh.modus." + modus).withStyle(farbe));
+                    addRenderableWidget(Button.builder(text, k -> anfragen("smart|anlage|" + a[0] + ":" + naechster))
+                            .bounds(x, y, KNOPF_B, SMART_H).build());
+                    y += SMART_H + 2;
+                }
+                knopf(x, oben() + HOEHE - 30, "zurueck", () -> wechseln(Seite.START));
+            }
             case AUFTRAG -> {
                 // Aufträge in zwei Spalten, darunter „Abbrechen“ und „James zurücksetzen“
                 int halb = (KNOPF_B - 4) / 2;
@@ -239,13 +285,21 @@ public class HandyBildschirm extends Screen {
         return y + hoehe + ABSTAND;
     }
 
+    private static int parse(String s) {
+        try {
+            return Integer.parseInt(s);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
     private void wechseln(Seite neu) {
         seite = neu;
         eingabe = null;
         if (neu == Seite.ORTE) {
             anfragen("orte");
         }
-        if (neu == Seite.SMART) {
+        if (neu == Seite.SMART || neu == Seite.SICHERHEIT) {
             anfragen("smart|status");
         }
         if (neu == Seite.GAESTE) {
@@ -266,9 +320,10 @@ public class HandyBildschirm extends Screen {
             String[] kv = teil.split("=", 2);
             if (kv.length == 2) {
                 smartZustand.put(kv[0], kv[1].equals("1"));
+                smartWerte.put(kv[0], kv[1]);
             }
         }
-        if (KompatClient.offenerBildschirm() instanceof HandyBildschirm h && h.seite == Seite.SMART) {
+        if (KompatClient.offenerBildschirm() instanceof HandyBildschirm h && (h.seite == Seite.SMART || h.seite == Seite.SICHERHEIT)) {
             h.rebuildWidgets();
         }
     }

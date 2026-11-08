@@ -63,7 +63,7 @@ public class LieferAuftrag extends Auftrag {
             truheGesucht = true;
             truhe = butler.liefertruhe();
             if (truhe == null) {
-                List<BlockPos> kiste = Umgebung.villaMarken(butler.welt(), "lieferkiste");
+                List<BlockPos> kiste = Umgebung.villaMarken(butler, "lieferkiste");
                 truhe = kiste.isEmpty() ? null : kiste.get(0);
             }
             if (truhe != null && !(butler.welt().getBlockEntity(truhe) instanceof Container)) {
@@ -81,7 +81,11 @@ public class LieferAuftrag extends Auftrag {
         if (p == null) {
             return Stand.LAEUFT; // wartet, bis der Herr wieder da ist
         }
-        if (p.level() != butler.level() || butler.distanceToSqr(p) > 48 * 48) {
+        if (p.level() != butler.level()) {
+            // Der Herr ist im Nether oder im End: warten, bis er zurück ist (die Koordinaten dort gelten hier nicht)
+            return Stand.LAEUFT;
+        }
+        if (butler.distanceToSqr(p) > 48 * 48) {
             butler.teleportiereNahe(p.blockPosition());
             return Stand.LAEUFT;
         }
@@ -108,9 +112,11 @@ public class LieferAuftrag extends Auftrag {
     }
 
     private Stand inDieTruhe(ButlerEntity butler, Quellen.Quelle q, int anzahl) {
-        ButlerEntity.Weg w = butler.gehZu(truhe, 2.2);
-        if (w == ButlerEntity.Weg.UNERREICHBAR) {
-            butler.teleportiereNahe(truhe);
+        // hinkommen: in Reichweite gilt als angekommen, sonst springt er notfalls daneben (z. B. unter einer niedrigen Decke)
+        ButlerEntity.Weg w = butler.hinkommen(truhe, 2.2);
+        if (w == ButlerEntity.Weg.UNERREICHBAR || !(butler.welt().getBlockEntity(truhe) instanceof Container)) {
+            // Kein Platz neben der Truhe (oder sie ist weg): dem Herrn persönlich bringen
+            truhe = null;
             return Stand.LAEUFT;
         }
         if (w != ButlerEntity.Weg.DA || !(butler.welt().getBlockEntity(truhe) instanceof Container c)) {

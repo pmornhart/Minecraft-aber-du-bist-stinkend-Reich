@@ -2,6 +2,7 @@ package de.moinmornhart.stinkendreich.butler.auftrag;
 
 import de.moinmornhart.stinkendreich.butler.ButlerEntity;
 import de.moinmornhart.stinkendreich.butler.Schutz;
+import de.moinmornhart.stinkendreich.butler.Umgebung;
 import de.moinmornhart.stinkendreich.villa.VillaPlatzierung;
 import net.minecraft.core.BlockPos;
 
@@ -21,7 +22,7 @@ final class Ausgang {
         if (!Schutz.inDerVilla(butler.level(), butler.blockPosition())) {
             return Auftrag.Stand.FERTIG;
         }
-        BlockPos ziel = punkt();
+        BlockPos ziel = punkt(butler);
         if (ziel == null) {
             return Auftrag.Stand.FERTIG;
         }
@@ -35,8 +36,15 @@ final class Ausgang {
         return w == ButlerEntity.Weg.DA ? Auftrag.Stand.FERTIG : Auftrag.Stand.LAEUFT;
     }
 
-    /** Weltposition vor dem Tor (Höhe des Erdgeschosses), oder null ohne Villa. */
-    static BlockPos punkt() {
-        return VillaPlatzierung.villa().map(v -> v.weltPos(AUSGANG_X, v.plan().bodenY + 1, AUSGANG_Z)).orElse(null);
+    /**
+     * Weltposition vor dem Tor (Höhe des Erdgeschosses) der Villa, auf deren Grundstück der Butler gerade steht (sonst
+     * seiner eigenen), oder null ohne Villa.
+     */
+    static BlockPos punkt(ButlerEntity butler) {
+        VillaPlatzierung.VillaInfo v = VillaPlatzierung.bei(butler.blockPosition());
+        if (v == null) {
+            v = Umgebung.eigeneVilla(butler);
+        }
+        return v == null ? null : v.weltPos(AUSGANG_X, v.plan().bodenY + 1, AUSGANG_Z);
     }
 }

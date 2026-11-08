@@ -55,25 +55,39 @@ public final class Umgebung {
         return aus;
     }
 
-    /** Weltpositionen einer Villa-Markierung (z. B. „ofen“, „vorrat“), leer ohne Villa. */
-    public static List<BlockPos> villaMarken(Level welt, String name) {
-        if (welt.dimension() != Level.OVERWORLD) {
+    /**
+     * Die Villa, zu der dieser Butler gehört: die Villa um seine Heimat, sonst die seines Besitzers, sonst die Villa am
+     * Spawn (Nummer 0). Jeder Butler arbeitet so mit den Öfen, Truhen und Fässern seiner eigenen Villa.
+     */
+    public static VillaPlatzierung.VillaInfo eigeneVilla(ButlerEntity butler) {
+        VillaPlatzierung.VillaInfo v = VillaPlatzierung.bei(butler.heimat());
+        if (v == null && butler.besitzer() != null) {
+            v = VillaPlatzierung.vonBesitzer(butler.besitzer());
+        }
+        return v != null ? v : VillaPlatzierung.villa().orElse(null);
+    }
+
+    /** Weltpositionen einer Markierung (z. B. „ofen“, „vorrat“) in der Villa des Butlers, leer ohne Villa. */
+    public static List<BlockPos> villaMarken(ButlerEntity butler, String name) {
+        if (butler.level().dimension() != Level.OVERWORLD) {
             return List.of();
         }
-        return VillaPlatzierung.villa().map(v -> {
-            List<BlockPos> liste = new ArrayList<>();
-            for (JsonArray a : v.plan().marke(name)) {
-                liste.add(v.weltPos(a.get(0).getAsDouble(), a.get(1).getAsDouble(), a.get(2).getAsDouble()));
-            }
-            return liste;
-        }).orElse(List.of());
+        VillaPlatzierung.VillaInfo v = eigeneVilla(butler);
+        if (v == null) {
+            return List.of();
+        }
+        List<BlockPos> liste = new ArrayList<>();
+        for (JsonArray a : v.plan().marke(name)) {
+            liste.add(v.weltPos(a.get(0).getAsDouble(), a.get(1).getAsDouble(), a.get(2).getAsDouble()));
+        }
+        return liste;
     }
 
     /** Villa-Markierungen plus passende Block-Entities rund um Butler und Zuhause (ohne Doppelte). */
     public static List<BlockPos> finden(ButlerEntity butler, String marke, int radius, Predicate<BlockEntity> passt) {
         ServerLevel welt = butler.welt();
         Set<BlockPos> alle = new LinkedHashSet<>();
-        for (BlockPos p : villaMarken(welt, marke)) {
+        for (BlockPos p : villaMarken(butler, marke)) {
             BlockEntity be = welt.getBlockEntity(p);
             if (be != null && passt.test(be)) {
                 alle.add(p);

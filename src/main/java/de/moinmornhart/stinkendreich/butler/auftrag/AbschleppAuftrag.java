@@ -3,7 +3,6 @@ package de.moinmornhart.stinkendreich.butler.auftrag;
 import com.google.gson.JsonObject;
 import de.moinmornhart.stinkendreich.Kompat;
 import de.moinmornhart.stinkendreich.auto.AutoEntity;
-import de.moinmornhart.stinkendreich.auto.Garage;
 import de.moinmornhart.stinkendreich.auto.HubschrauberEntity;
 import de.moinmornhart.stinkendreich.butler.ButlerEntity;
 import de.moinmornhart.stinkendreich.butler.Pilot;
@@ -18,8 +17,9 @@ import java.util.UUID;
 /**
  * „Nach Hause bringen“ aus dem Automenü (Philip, 07.11.: „dass James mit dem Flugzeug angeflogen kommt, das daran
  * festbindet und es wieder nach Hause bringt“). James kommt mit dem Hubschrauber, schwebt über den Wagen, hängt ihn an
- * ein Seil (der Wagen hängt {@link #SEIL} Blöcke unter dem Hubschrauber), fliegt zur eigenen Villa, stellt ihn in die
- * Tiefgarage und landet danach auf dem Landeplatz.
+ * ein Seil (der Wagen hängt {@link #SEIL} Blöcke unter dem Hubschrauber), fliegt zur eigenen Villa, sinkt über dem roten
+ * Teppich vor der Haustür und setzt den Wagen dort sanft ab (Philip, 08.11.: „dass die Autos mit dem Heli dann da hin
+ * kommen“) und landet danach auf dem Landeplatz.
  *
  * <p>Damit der Flug auch weitergeht, wenn niemand in der Nähe ist, hält der Hubschrauber seinen Chunk geladen
  * ({@link HubschrauberEntity#chunkHalten}).</p>
@@ -29,7 +29,7 @@ public class AbschleppAuftrag extends Auftrag {
     /** Länge des Seils (Blöcke zwischen Hubschrauber und Wagendach). */
     private static final double SEIL = 4.5;
 
-    private enum Phase { HOLEN, ANFLUG, ANHAENGEN, TRAGEN, LANDEN }
+    private enum Phase { HOLEN, ANFLUG, ANHAENGEN, TRAGEN, ABSETZEN, LANDEN }
 
     private final UUID wagenId;
     private Phase phase = Phase.HOLEN;
@@ -37,6 +37,8 @@ public class AbschleppAuftrag extends Auftrag {
     private AutoEntity wagen;
     private Pilot pilot;
     private int phasenTicks;
+    /** Position des Hubschraubers zu Beginn des Absetzens. */
+    private Vec3 absetzStart;
 
     public AbschleppAuftrag(UUID wagen) {
         this.wagenId = wagen;
@@ -60,6 +62,8 @@ public class AbschleppAuftrag extends Auftrag {
         }
         switch (phase) {
             case HOLEN -> {
+                // Nach einem Neustart mitten im Tragen hing der Wagen sonst schwerelos in der Luft
+                wagen.setNoGravity(false);
                 // Hubschrauber im Anflug bereitstellen (taucht in Reisehöhe auf, James am Steuer)
                 de.moinmornhart.stinkendreich.handy.Handy.heliHolenZu(welt, wagen.position(), butler);
                 heli = butler.getVehicle() instanceof HubschrauberEntity h ? h : null;
@@ -78,6 +82,14 @@ public class AbschleppAuftrag extends Auftrag {
                 double abstand = Math.hypot(wagen.getX() - heli.getX(), wagen.getZ() - heli.getZ());
                 if (abstand < 10 && heli.getY() > wagen.getY() + SEIL) {
                     wechseln(Phase.ANHAENGEN);
+                } else if (phasenTicks > 20 * 60) {
+                    // Nach einer Minute noch nicht über dem Wagen (z. B. daneben gelandet oder hängt fest): direkt über den
+                    // Wagen setzen und weitermachen, statt ewig zu warten
+                    Vec3 ueber = wagen.position().add(0, SEIL + 1.5, 0);
+                    heli.chauffeurEingabe(0, 0, 0);
+                    Kompat.versetzen(heli, ueber.x, ueber.y, ueber.z, heli.getYRot(), 0.0F);
+                    melden("Anflug dauerte zu lange, Hubschrauber über den Wagen gesetzt");
+                    wechseln(Phase.ANHAENGEN);
                 } else {
                     pilot.fliegen(heli);
                 }
@@ -93,10 +105,8 @@ public class AbschleppAuftrag extends Auftrag {
                     wagen.setNoGravity(true);
                     welt.playSound(null, wagen.blockPosition(), net.minecraft.sounds.SoundEvents.CHAIN_PLACE,
                             net.minecraft.sounds.SoundSource.NEUTRAL, 1.0F, 0.8F);
-                    VillaPlatzierung.VillaInfo villa = heimVilla(butler);
-                    Vec3 ziel = villa != null ? Vec3.atBottomCenterOf(villa.spawn()) : Vec3.atBottomCenterOf(butler.heimat());
-                    pilot = new Pilot(ziel);
-                    melden("Wagen am Seil, fliege nach " + BlockPos.containing(ziel).toShortString());
+                    pilot = new Pilot(absetzOrt(butler));
+                    melden("Wagen am Seil, fliege nach " + BlockPos.containing(pilot.ziel()).toShortString());
                     wechseln(Phase.TRAGEN);
                 }
             }
@@ -104,16 +114,34 @@ public class AbschleppAuftrag extends Auftrag {
                 pilot.fliegen(heli);
                 anSeil();
                 double rest = Math.hypot(pilot.ziel().x - heli.getX(), pilot.ziel().z - heli.getZ());
-                if (rest < 8 || phasenTicks > 20 * 60 * 5) {
-                    // Angekommen: Wagen in die Garage (ohne Stellplatz: vor der Villa absetzen)
+                if (rest < 6 || phasenTicks > 20 * 60 * 5) {
+                    absetzStart = heli.position();
+                    wechseln(Phase.ABSETZEN);
+                }
+            }
+            case ABSETZEN -> {
+                // Über dem Teppich einschweben und sinken, bis der Wagen auf dem Boden steht (4 Sekunden), dann ausklinken
+                Vec3 ort = pilot.ziel();
+                Vec3 ueber = new Vec3(ort.x, ort.y + wagen.getBbHeight() + SEIL, ort.z);
+                double t = Math.min(1.0, phasenTicks / 80.0);
+                t = t * t * (3 - 2 * t);
+                Vec3 neu = absetzStart.lerp(ueber, t);
+                heli.chauffeurEingabe(0, 0, 0);
+                // Nase zum Tor (Süden), damit der Wagen gleich wieder losfahren kann
+                float gier = heli.getYRot() + net.minecraft.util.Mth.wrapDegrees(0.0F - heli.getYRot()) * 0.08F;
+                Kompat.versetzen(heli, neu.x, neu.y, neu.z, gier, 0.0F);
+                anSeil();
+                if (phasenTicks >= 90) {
                     wagen.setNoGravity(false);
-                    if (!Garage.einparken(welt, wagen, butler.besitzer())) {
-                        Kompat.versetzen(wagen, pilot.ziel().x + 4, pilot.ziel().y + 1, pilot.ziel().z, wagen.getYRot(), 0.0F);
-                    }
+                    Kompat.versetzen(wagen, ort.x, ort.y, ort.z, 0.0F, 0.0F);
+                    wagen.setYBodyRot(0.0F);
+                    wagen.setDeltaMovement(Vec3.ZERO);
+                    welt.playSound(null, wagen.blockPosition(), net.minecraft.sounds.SoundEvents.CHAIN_BREAK,
+                            net.minecraft.sounds.SoundSource.NEUTRAL, 1.0F, 1.0F);
                     VillaPlatzierung.VillaInfo villa = heimVilla(butler);
-                    pilot = new Pilot(villa != null ? Vec3.atBottomCenterOf(villa.landeplatz()) : heli.position());
+                    pilot = new Pilot(villa != null ? Vec3.atBottomCenterOf(villa.landeplatz()) : heli.position().add(0, 0, 20));
                     ServerPlayerNachricht.an(butler, Component.translatable("stinkendreich.butler.abschleppen.da"));
-                    melden("Wagen abgesetzt nach " + phasenTicks / 20 + " s Flug");
+                    melden("Wagen abgesetzt vor der Haustür bei " + wagen.blockPosition().toShortString());
                     wechseln(Phase.LANDEN);
                 }
             }
@@ -141,9 +169,14 @@ public class AbschleppAuftrag extends Auftrag {
         de.moinmornhart.stinkendreich.StinkendReich.LOGGER.info("Abschleppen: {}", text);
     }
 
+    /** Absetzplatz: roter Teppich vor der Haustür der eigenen Villa (ohne Villa: James' Zuhause). */
+    private Vec3 absetzOrt(ButlerEntity butler) {
+        VillaPlatzierung.VillaInfo villa = heimVilla(butler);
+        return villa != null ? FahrAuftrag.vorDerTuer(villa) : Vec3.atBottomCenterOf(butler.heimat());
+    }
+
     private VillaPlatzierung.VillaInfo heimVilla(ButlerEntity butler) {
-        VillaPlatzierung.VillaInfo v = butler.besitzer() == null ? null : VillaPlatzierung.vonBesitzer(butler.besitzer());
-        return v != null ? v : VillaPlatzierung.villa().orElse(null);
+        return de.moinmornhart.stinkendreich.butler.Umgebung.eigeneVilla(butler);
     }
 
     private void wechseln(Phase neu) {
@@ -173,7 +206,7 @@ public class AbschleppAuftrag extends Auftrag {
 
     @Override
     public Component status() {
-        return Component.translatable(phase == Phase.TRAGEN ? "stinkendreich.butler.status.schleppt" : "stinkendreich.butler.status.holtwagen");
+        return Component.translatable(phase == Phase.TRAGEN || phase == Phase.ABSETZEN ? "stinkendreich.butler.status.schleppt" : "stinkendreich.butler.status.holtwagen");
     }
 
     @Override

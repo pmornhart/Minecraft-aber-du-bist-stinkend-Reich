@@ -1,0 +1,56 @@
+# Treppen ins Ziel, neu gebaut (Philip, 08.11.: „das muss wirklich frei sein, es muss nach unten gehen und es darf kein
+# Wasser drin sein“): 3 breit, Absätze an den Ecken, Hülle lückenlos, Treppenwart. Prüfung Stufe für Stufe, Bilder von
+# innen, dann absichtlich Wasser in die Decke – der Treppenwart muss es wegräumen und die Stelle zumauern.
+# Aufruf: tools/ingame/test.sh 26.3 tools/ingame/szenarien/treppe050.txt
+warte 30
+server /gamemode creative @p
+server /time set 6000
+server /gamerule advance_time false
+merke anfang
+bis 900 Treppe zu .*Mine.* fertig|keine Treppe zu .*Mine|kein Weg für die Treppe
+bis 900 Treppe zu .*Endportal.* fertig|keine Treppe zu .*Endportal|kein Weg für die Treppe
+server /butler treppenpruefen
+warte 2
+server /gamemode spectator @p
+taste F1
+server /butler strassenpunkt 1 99999
+warte 6
+server /execute at @p run tp @p ~ ~7 ~ facing ~ ~-8 ~3
+warte 5
+bild t01_mine_eingang_oben
+server /butler treppenblick mine 0
+warte 5
+bild t02_mine_tor
+server /butler treppenblick mine 0.25
+warte 4
+bild t03_mine_viertel
+server /butler treppenblick mine 0.5
+warte 4
+bild t04_mine_mitte
+server /butler treppenblick mine 0.75
+warte 4
+bild t05_mine_dreiviertel
+server /butler treppenblick mine 1
+warte 4
+bild t06_mine_unten
+server /butler treppenblick endportal 0
+warte 5
+bild t07_endportal_tor
+server /butler treppenblick endportal 0.5
+warte 4
+bild t08_endportal_mitte
+server /butler treppenblick endportal 1
+warte 4
+bild t09_endportal_unten
+# Wasser in die Decke der Minentreppe (mitten im Gang): der Treppenwart räumt es weg und mauert zu
+server /butler treppenblick mine 0.5
+warte 3
+server /execute at @p run fill ~-3 ~2 ~-3 ~3 ~4 ~3 minecraft:water replace minecraft:smooth_quartz
+warte 2
+bild t10_wasser_rein
+merke
+bis 30 Treppenwart: .* Stellen
+warte 3
+server /butler treppenpruefen
+warte 2
+bild t11_wasser_weg

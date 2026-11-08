@@ -733,5 +733,21 @@
   "stinkendreich.zugang.falscher_code": "Falscher Code!",
   "stinkendreich.zugang.karte": "Karte erkannt – Tür offen.",
   "stinkendreich.zugang.keine_karte": "Keine Zugangskarte!",
-  "stinkendreich.zugang.verweigert": "Zugriff verweigert."
+  "stinkendreich.zugang.verweigert": "Zugriff verweigert.",
+  "stinkendreich.handy.sicherheit": "Sicherheit",
+  "stinkendreich.handy.titel.sicherheit": "Sicherheit",
+  "stinkendreich.handy.sh.alarmaus": "Alarm ausschalten",
+  "stinkendreich.handy.sh.stufe": "Alarmstufe: %s",
+  "stinkendreich.handy.sh.anlage.geschuetze": "Abwehrgeschütze",
+  "stinkendreich.handy.sh.anlage.laser": "Laser",
+  "stinkendreich.handy.sh.anlage.melder": "Bewegungsmelder",
+  "stinkendreich.handy.sh.anlage.sirenen": "Sirenen & Leuchten",
+  "stinkendreich.handy.sh.anlage.minen": "Landminen",
+  "stinkendreich.handy.sh.anlage.fallen": "Tresorfallen",
+  "stinkendreich.handy.sh.modus.auto": "Auto",
+  "stinkendreich.handy.sh.modus.an": "An",
+  "stinkendreich.handy.sh.modus.aus": "Aus",
+  "stinkendreich.smarthome.anlage.auto": "%s folgen jetzt der Alarmstufe.",
+  "stinkendreich.smarthome.anlage.an": "%s sind jetzt eingeschaltet.",
+  "stinkendreich.smarthome.anlage.aus": "%s sind jetzt ausgeschaltet."
 }

@@ -60,6 +60,11 @@ public class JagdAuftrag extends Auftrag {
         if (gesammelt >= menge) {
             return Stand.FERTIG;
         }
+        // Taschen voll: Weiterjagen hätte keinen Sinn, die Beute könnte er nicht mehr aufheben
+        if (butler.taschen().freiePlaetze() == 0) {
+            butler.sagen(Component.translatable("stinkendreich.butler.voll"));
+            return Stand.FERTIG;
+        }
         ServerLevel welt = butler.welt();
         phasenTicks++;
         switch (phase) {

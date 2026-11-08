@@ -172,7 +172,13 @@ public class HolzAuftrag extends Auftrag {
         while (welt.getBlockState(m.below()).is(BlockTags.LOGS) && schritte++ < 32) {
             m.move(0, -1, 0);
         }
-        return welt.getBlockState(m.below()).is(BlockTags.DIRT) ? m.immutable() : null;
+        return istBoden(welt.getBlockState(m.below())) ? m.immutable() : null;
+    }
+
+    /** Boden, auf dem ein Baum wächst. Ab 26.1 gehören Gras, Podsol, Myzel, Schlamm und Moos nicht mehr zur Gruppe „Erde“. */
+    private static boolean istBoden(BlockState s) {
+        return s.is(BlockTags.DIRT) || s.is(Blocks.GRASS_BLOCK) || s.is(Blocks.PODZOL) || s.is(Blocks.MYCELIUM)
+                || s.is(Blocks.MUD) || s.is(Blocks.MOSS_BLOCK) || s.is(Blocks.COARSE_DIRT) || s.is(Blocks.ROOTED_DIRT);
     }
 
     /** Ein echter Baum: Stamm darf abgebaut werden und trägt natürliches (nicht festes) Laub. */

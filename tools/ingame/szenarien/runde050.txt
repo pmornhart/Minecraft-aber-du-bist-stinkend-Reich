@@ -1,0 +1,80 @@
+# Runde 0.5.0: Leertaste im Hubschrauber (James sitzt ohne Auftrag mit drin), Sicherheit übers Handy (Geschütze ohne
+# Festung an, Stufe), Abschleppen bis vor die Haustür, Butler-Auftrag aus großer Entfernung (Chunk bleibt geladen).
+# Weltkoordinaten = Villa + (-56, 62, -56). Aufruf: tools/ingame/test.sh 26.3 tools/ingame/szenarien/runde050.txt
+warte 30
+server /gamemode creative @p
+server /time set 6000
+server /gamerule advance_time false
+server /difficulty easy
+merke anfang
+bis 900 Straße Mine: Ende
+# --- Hubschrauber: James sitzt mit drin, du steuerst – Leertaste steigt ---
+server /butler strassenpunkt 0 40
+warte 4
+server /execute at @p run summon stinkendreich:hubschrauber ~ ~ ~4
+warte 2
+server /butler rufen
+warte 3
+server /ride @p mount @e[type=stinkendreich:hubschrauber,limit=1,sort=nearest]
+warte 1
+server /ride @e[type=stinkendreich:butler,limit=1,sort=nearest] mount @e[type=stinkendreich:hubschrauber,limit=1,sort=nearest]
+warte 7
+server /execute as @e[type=stinkendreich:hubschrauber,limit=1,sort=nearest] run data get entity @s Pos[1]
+halte 5 space
+server /execute as @e[type=stinkendreich:hubschrauber,limit=1,sort=nearest] run data get entity @s Pos[1]
+taste F5
+warte 1
+bild h01_heli_steigt_mit_james
+taste F5
+warte 1
+taste F5
+server /ride @p dismount
+warte 2
+# --- Sicherheit übers Handy: Abwehrgeschütze an, ohne Festung ---
+server /item replace entity @p weapon.mainhand with stinkendreich:handy
+server /handy smart|stufe|0
+server /handy smart|anlage|geschuetze:an
+warte 2
+server /gamemode spectator @p
+taste F1
+server /villa ort 41 31 79 51 15
+warte 3
+server /summon minecraft:vindicator -25.5 88 32.5 {PersistenceRequired:1b}
+server /summon minecraft:vindicator -23.5 88 34.5 {PersistenceRequired:1b}
+warte 3
+bild g01_geschuetze_per_handy
+warte 12
+bild g02_geschuetze_schiessen
+server /execute if entity @e[type=minecraft:vindicator] run say DIENER_NOCH_DA
+server /execute unless entity @e[type=minecraft:vindicator] run say DIENER_WEG
+server /kill @e[type=minecraft:vindicator]
+server /handy smart|anlage|geschuetze:auto
+warte 3
+bild g03_geschuetze_eingefahren
+taste F1
+server /gamemode creative @p
+# --- Abschleppen bis vor die Haustür ---
+server /butler strassenpunkt 0 30
+warte 4
+server /execute at @p run summon stinkendreich:stretchlimo ~ ~ ~3
+warte 2
+server /butler auto schluessel
+merke
+server /butler auto heim
+bis 120 Abschleppen: Wagen am Seil
+bis 300 Abschleppen: Wagen abgesetzt
+warte 3
+server /gamemode spectator @p
+taste F1
+server /execute at @e[type=stinkendreich:stretchlimo,limit=1,sort=nearest] run tp @p ~6 ~6 ~10 facing entity @e[type=stinkendreich:stretchlimo,limit=1,sort=nearest]
+warte 4
+bild a01_limo_vor_der_haustuer
+taste F1
+server /gamemode creative @p
+# --- Auftrag aus der Ferne: du bist weit weg, James arbeitet trotzdem ---
+server /spreadplayers 0 0 0 1 false @p
+server /tp @p 700 120 700
+warte 8
+merke
+server Butler, hol 4 Eisen in die Truhe
+bis 900 in die Truhe gelegt|Bitte sehr|Verzeihung|fehlt|habe ich nur

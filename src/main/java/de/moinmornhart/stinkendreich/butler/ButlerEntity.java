@@ -69,6 +69,8 @@ public class ButlerEntity extends PathfinderMob {
     /** Name des Besitzers (leer = noch niemand), damit der Client weiß, wer das Menü öffnen darf. */
     private static final EntityDataAccessor<String> BESITZER_NAME = SynchedEntityData.defineId(ButlerEntity.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<Boolean> FOLGT = SynchedEntityData.defineId(ButlerEntity.class, EntityDataSerializers.BOOLEAN);
+    /** Sitzt er gerade mit einem Fahr-/Flugauftrag am Steuer? (Auch der Client muss wissen, wer ein Fahrzeug steuert.) */
+    private static final EntityDataAccessor<Boolean> AM_STEUER = SynchedEntityData.defineId(ButlerEntity.class, EntityDataSerializers.BOOLEAN);
     private static final String SCHLUESSEL = "stinkendreich";
 
     /** Reichweite der Hände (vom Auge bis zur Blockmitte). */
@@ -117,6 +119,7 @@ public class ButlerEntity extends PathfinderMob {
         daten.define(STATUS, Component.empty());
         daten.define(BESITZER_NAME, "");
         daten.define(FOLGT, false);
+        daten.define(AM_STEUER, false);
     }
 
     @Override
@@ -185,6 +188,12 @@ public class ButlerEntity extends PathfinderMob {
             if (auftraege.isEmpty()) {
                 statusSetzen();
             }
+        }
+        if (tickCount % 20 == 7) {
+            chunkHalten();
+        }
+        if (entityData.get(AM_STEUER) != faehrtGerade()) {
+            entityData.set(AM_STEUER, faehrtGerade());
         }
         // Am Steuer ohne Auftrag und ohne Gast: aussteigen (beim Hubschrauber erst nach der Landung)
         if (tickCount % 20 == 0 && getVehicle() instanceof de.moinmornhart.stinkendreich.auto.AutoEntity wagen && !faehrtGerade()
@@ -334,7 +343,44 @@ public class ButlerEntity extends PathfinderMob {
     public void neueAuftraege(List<Auftrag> liste) {
         stopp();
         auftraege.addAll(liste);
+        // Arbeit statt Fahrt: erst aussteigen (sonst grub er vom Fahrersitz aus, während der Herr noch im Wagen saß)
+        if (isPassenger() && !faehrtGerade()) {
+            stopRiding();
+        }
         statusSetzen();
+        chunkHalten();
+    }
+
+    /** Chunk, den James gerade geladen hält (Long.MIN_VALUE = keiner). */
+    private long gehaltenerChunk = Long.MIN_VALUE;
+
+    /**
+     * Solange James Aufträge hat, bleibt sein Chunk geladen (der Ladeschein wandert mit ihm). Sonst stand er still, sobald
+     * der Herr weiter als die Simulationsweite weg war: Bestellungen wurden mit „Sehr wohl“ angenommen, aber nie
+     * ausgeführt (Philip, 08.11.: „manchmal braucht er extra lange“).
+     */
+    private void chunkHalten() {
+        if (!(level() instanceof ServerLevel welt)) {
+            return;
+        }
+        int cx = blockPosition().getX() >> 4, cz = blockPosition().getZ() >> 4;
+        long k = !auftraege.isEmpty() && !isRemoved() ? ((long) cx << 32) ^ (cz & 0xffffffffL) : Long.MIN_VALUE;
+        if (k == gehaltenerChunk) {
+            return;
+        }
+        if (gehaltenerChunk != Long.MIN_VALUE) {
+            welt.getChunkSource().updateChunkForced(new net.minecraft.world.level.ChunkPos((int) (gehaltenerChunk >> 32), (int) gehaltenerChunk), false);
+        }
+        if (k != Long.MIN_VALUE) {
+            welt.getChunkSource().updateChunkForced(new net.minecraft.world.level.ChunkPos(cx, cz), true);
+        }
+        gehaltenerChunk = k;
+    }
+
+    @Override
+    public void remove(RemovalReason grund) {
+        super.remove(grund);
+        chunkHalten();          // isRemoved() ist jetzt wahr: Ladeschein freigeben
     }
 
     public void stopp() {
@@ -346,6 +392,7 @@ public class ButlerEntity extends PathfinderMob {
         getNavigation().stop();
         werkzeug(null);
         statusSetzen();
+        chunkHalten();
     }
 
     public Auftrag aktuellerAuftrag() {
@@ -356,8 +403,18 @@ public class ButlerEntity extends PathfinderMob {
     public boolean faehrtGerade() {
         Auftrag a = auftraege.peek();
         return a instanceof de.moinmornhart.stinkendreich.butler.auftrag.FahrAuftrag
+                || a instanceof de.moinmornhart.stinkendreich.butler.auftrag.AnrufAuftrag
                 || a instanceof de.moinmornhart.stinkendreich.butler.auftrag.FlugAuftrag
                 || a instanceof de.moinmornhart.stinkendreich.butler.auftrag.AbschleppAuftrag;
+    }
+
+    /**
+     * Steuert er das Fahrzeug, in dem er sitzt? Auf dem Server = {@link #faehrtGerade()}, auf dem Client der abgeglichene
+     * Wert. Ohne Auftrag steuert der Spieler (Philip, 08.11.: „Leertaste geht beim Fliegen nicht mehr“ – James saß nach
+     * dem Herbringen noch im Hubschrauber und galt als Pilot, der Hubschrauber sank).
+     */
+    public boolean amSteuer() {
+        return level().isClientSide() ? entityData.get(AM_STEUER) : faehrtGerade();
     }
 
     // ------------------------------------------------------------------
@@ -485,9 +542,18 @@ public class ButlerEntity extends PathfinderMob {
             stillstand = 0;
             letztePos = null;
         }
+        boolean amEnde = getNavigation().isDone() && wegNeuIn > 0;     // 0 = erster Weg zu diesem Ziel
         if (--wegNeuIn <= 0 || getNavigation().isDone()) {
             wegNeuIn = 30;
             Path pfad = getNavigation().createPath(block, Math.max(0, (int) Math.floor(nah) - 1));
+            // Am Ende des Wegs angekommen, aber noch nicht nah genug, und der neue Weg führt nirgendwohin (z. B. Truhe zwei
+            // Blöcke hoch oder hinter einer Theke): nicht jeden Tick neu suchen, sondern gleich „unerreichbar“ melden –
+            // hinkommen() springt dann daneben (vorher stand er an jeder solchen Truhe 4 Sekunden)
+            boolean leer = pfad != null && amEnde && pfad.getEndNode() != null && pfad.getEndNode().asBlockPos().distManhattan(blockPosition()) <= 1;
+            if (leer) {
+                wegZiel = null;
+                return Weg.UNERREICHBAR;
+            }
             if (pfad == null || !fuehrtWeiter(pfad, punkt, nah)) {
                 if (++wegFehler >= 3) {
                     wegZiel = null;
@@ -617,7 +683,9 @@ public class ButlerEntity extends PathfinderMob {
     /** Arbeitet die Aufträge ab; hat Vorrang vor allem anderen außer Schwimmen. */
     private class ArbeitsZiel extends Goal {
         ArbeitsZiel() {
-            setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK, Flag.JUMP));
+            // Ohne JUMP: den hält auch das Schwimm-Ziel (Priorität 0). Mit JUMP verdrängte es im Wasser die Arbeit, und
+            // James trieb auf der Stelle, solange er im Wasser war (Aufträge über Flüsse oder in gefluteten Tunneln hingen)
+            setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
         }
 
         @Override

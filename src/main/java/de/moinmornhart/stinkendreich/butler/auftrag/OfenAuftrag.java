@@ -93,8 +93,11 @@ public class OfenAuftrag extends Auftrag {
                 if (oefen.isEmpty()) {
                     return fehlschlag(Component.translatable("stinkendreich.butler.keinofen"));
                 }
+                // Nicht mehr Öfen als nötig: ein Stück Kohle schmilzt 8 Stück, und jeder Ofen braucht mindestens ein
+                // ganzes Stück Brennstoff (sonst reicht die geplante Kohle nicht und ein Ofen bleibt leer)
+                int anzahl = Math.min(Math.min(MAX_OEFEN, oefen.size()), (rest + 7) / 8);
                 plaetze.clear();
-                for (BlockPos p : oefen.subList(0, Math.min(MAX_OEFEN, oefen.size()))) {
+                for (BlockPos p : oefen.subList(0, Math.max(1, anzahl))) {
                     plaetze.add(new Platz(p));
                 }
                 // Brennstoff reicht? Sonst erst aus dem Vorrat der Villa holen
@@ -103,16 +106,15 @@ public class OfenAuftrag extends Auftrag {
                     phase = Phase.BRENNSTOFF;
                     brennstoffTruhe = 0;
                 } else {
-                    phase = Phase.BELADEN;
+                    beladenBeginnen(butler, q);
                 }
                 index = 0;
             }
             case BRENNSTOFF -> {
-                List<BlockPos> truhen = Umgebung.villaMarken(welt, "brennstoff");
+                List<BlockPos> truhen = Umgebung.villaMarken(butler, "brennstoff");
                 int rest = Math.min(menge - fertig, butler.taschen().zaehlen(q.passt()));
                 if (brennstoffTruhe >= truhen.size() || brennwert(butler, q) >= bedarf(rest)) {
-                    phase = Phase.BELADEN;
-                    index = 0;
+                    beladenBeginnen(butler, q);
                     return Stand.LAEUFT;
                 }
                 BlockPos t = truhen.get(brennstoffTruhe);
@@ -124,7 +126,10 @@ public class OfenAuftrag extends Auftrag {
                         int fehlt = (bedarf(rest) - brennwert(butler, q) + 15) / 16;
                         for (ItemStack s : Taschen.entnehmen(c, st -> st.is(net.minecraft.world.item.Items.COAL)
                                 || st.is(net.minecraft.world.item.Items.CHARCOAL), fehlt)) {
-                            butler.taschen().einpacken(s);
+                            ItemStack rest2 = butler.taschen().einpacken(s);
+                            if (!rest2.isEmpty()) {
+                                Taschen.einlegen(c, rest2); // passt nicht mehr in die Taschen: zurück ins Fass
+                            }
                         }
                         Kompat.schwingen(butler);
                     }
@@ -134,6 +139,12 @@ public class OfenAuftrag extends Auftrag {
             case BELADEN -> {
                 if (index >= plaetze.size()) {
                     if (plaetze.stream().allMatch(p -> p.menge == 0)) {
+                        if (fertig > 0) {
+                            // Ein Teil ist schon fertig: den liefern statt alles abzubrechen (ein Fehlschlag verwirft
+                            // den ganzen Plan, das Geschmolzene käme nie beim Herrn an)
+                            butler.sagen(Component.translatable("stinkendreich.butler.nur", fertig, ergebnisName(q)));
+                            return Stand.FERTIG;
+                        }
                         return fehlschlag(Component.translatable("stinkendreich.butler.keinbrennstoff"));
                     }
                     phase = Phase.WARTEN;
@@ -151,8 +162,16 @@ public class OfenAuftrag extends Auftrag {
             }
             case WARTEN -> {
                 warteTicks++;
-                butler.schauAuf(plaetze.get(0).pos);
+                if (!plaetze.isEmpty()) {
+                    butler.schauAuf(plaetze.get(0).pos);
+                }
                 if (warteTicks % 20 != 0) {
+                    return Stand.LAEUFT;
+                }
+                // Nach einem Neuladen fehlt die Rohware evtl. (Ofen abgebaut): nichts zu warten
+                if (plaetze.isEmpty()) {
+                    phase = Phase.ENTNEHMEN;
+                    index = 0;
                     return Stand.LAEUFT;
                 }
                 boolean alleFertig = true;
@@ -189,6 +208,25 @@ public class OfenAuftrag extends Auftrag {
             }
         }
         return Stand.LAEUFT;
+    }
+
+    /**
+     * Wechselt zum Beladen. Vorher werden die Öfen auf so viele beschränkt, wie ganze Kohlen (16 Brennwert) da sind –
+     * mindestens einer. Sonst bekäme der letzte Ofen keinen Brennstoff, die Rohware darin bliebe liegen, und in der
+     * nächsten Runde hieße es „kein Brennstoff“.
+     */
+    private void beladenBeginnen(ButlerEntity butler, Quellen.Quelle q) {
+        int moeglich = Math.max(1, brennwert(butler, q) / 16);
+        while (plaetze.size() > moeglich) {
+            plaetze.remove(plaetze.size() - 1);
+        }
+        phase = Phase.BELADEN;
+        index = 0;
+    }
+
+    /** Name des Ergebnisses für Meldungen. */
+    private Component ergebnisName(Quellen.Quelle q) {
+        return ergebnis != null ? ergebnis.getDefaultInstance().getHoverName() : q.anzeigeStapel().getHoverName();
     }
 
     /** Brennwert (halbe Schmelzvorgänge), der für {@code stueck} Gegenstände in den gewählten Öfen nötig ist. */
@@ -343,11 +381,68 @@ public class OfenAuftrag extends Auftrag {
         j.addProperty("eingang", eingang);
         j.addProperty("menge", menge);
         j.addProperty("fertig", fertig);
+        // Laufender Stand: Liegt die Rohware schon in den Öfen, muss er nach dem Neuladen dort weitermachen (sonst
+        // fände SUCHEN nichts mehr in den Taschen und der Auftrag endete ohne Ergebnis)
+        j.addProperty("phase", phase.name());
+        j.addProperty("index", index);
+        j.addProperty("warteTicks", warteTicks);
+        j.addProperty("brennstoffTruhe", brennstoffTruhe);
+        if (ergebnis != null) {
+            j.addProperty("ergebnis", net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(ergebnis).toString());
+        }
+        com.google.gson.JsonArray liste = new com.google.gson.JsonArray();
+        for (Platz p : plaetze) {
+            JsonObject o = new JsonObject();
+            o.addProperty("x", p.pos.getX());
+            o.addProperty("y", p.pos.getY());
+            o.addProperty("z", p.pos.getZ());
+            o.addProperty("menge", p.menge);
+            o.addProperty("vorher", p.vorher);
+            liste.add(o);
+        }
+        j.add("plaetze", liste);
     }
 
     static OfenAuftrag ausJson(JsonObject j) {
         OfenAuftrag a = new OfenAuftrag(text(j, "eingang", "rohes_eisen"), zahl(j, "menge", 1));
         a.fertig = zahl(j, "fertig", 0);
+        a.index = zahl(j, "index", 0);
+        a.warteTicks = zahl(j, "warteTicks", 0);
+        a.brennstoffTruhe = zahl(j, "brennstoffTruhe", 0);
+        if (j.has("plaetze") && j.get("plaetze").isJsonArray()) {
+            for (var e : j.getAsJsonArray("plaetze")) {
+                JsonObject o = e.getAsJsonObject();
+                Platz p = new Platz(new BlockPos(zahl(o, "x", 0), zahl(o, "y", 0), zahl(o, "z", 0)));
+                p.menge = zahl(o, "menge", 0);
+                p.vorher = zahl(o, "vorher", 0);
+                a.plaetze.add(p);
+            }
+        }
+        if (j.has("ergebnis")) {
+            a.ergebnis = itemNachId(text(j, "ergebnis", ""));
+        }
+        try {
+            a.phase = Phase.valueOf(text(j, "phase", Phase.SUCHEN.name()));
+        } catch (IllegalArgumentException e) {
+            a.phase = Phase.SUCHEN;
+        }
+        // Ohne gemerkte Öfen oder Ergebnis lässt sich nur von vorn anfangen; liegt schon etwas in den Öfen, geht es mit
+        // Warten bzw. Entnehmen weiter
+        if (a.phase != Phase.SUCHEN && (a.plaetze.isEmpty() || a.ergebnis == null)) {
+            a.phase = Phase.SUCHEN;
+            a.index = 0;
+        }
         return a;
+    }
+
+    /** Gegenstand zu einer Kennung wie „minecraft:iron_ingot“, oder null. */
+    private static Item itemNachId(String id) {
+        var schluessel = net.minecraft.resources.Identifier.tryParse(id);
+        if (schluessel == null) {
+            return null;
+        }
+        // getOptional gibt es in allen Versionen (get/getValue wurde 1.21.2 umbenannt)
+        Item item = net.minecraft.core.registries.BuiltInRegistries.ITEM.getOptional(schluessel).orElse(null);
+        return item == net.minecraft.world.item.Items.AIR ? null : item;
     }
 }

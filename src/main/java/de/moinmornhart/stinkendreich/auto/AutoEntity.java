@@ -207,14 +207,33 @@ public class AutoEntity extends Mob {
      */
     @Override
     public LivingEntity getControllingPassenger() {
-        de.moinmornhart.stinkendreich.butler.ButlerEntity butler = chauffeur();
+        de.moinmornhart.stinkendreich.butler.ButlerEntity butler = fahrenderButler();
         if (butler != null) {
             return butler;
         }
         if (fahrerOhneMod() != null) {
             return null;    // Spieler ohne Mod: der Server fährt mit seinen Tasten (siehe travel)
         }
-        return getFirstPassenger() instanceof Player p ? p : null;
+        return spielerAmSteuer();
+    }
+
+    /** Erster Spieler unter den Insassen (er steuert, wenn der Butler keinen Fahrauftrag hat). */
+    private Player spielerAmSteuer() {
+        for (Entity e : getPassengers()) {
+            if (e instanceof Player p) {
+                return p;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Der Butler am Steuer: nur mit Fahr-/Flugauftrag – oder wenn kein Spieler drin ist. Sitzt ein Spieler mit drin und
+     * James hat nichts zu tun (z. B. nachdem er den Hubschrauber hergeflogen hat), steuert der Spieler.
+     */
+    public de.moinmornhart.stinkendreich.butler.ButlerEntity fahrenderButler() {
+        de.moinmornhart.stinkendreich.butler.ButlerEntity b = chauffeur();
+        return b != null && (b.amSteuer() || spielerAmSteuer() == null) ? b : null;
     }
 
     /**
@@ -223,7 +242,7 @@ public class AutoEntity extends Mob {
      */
     public net.minecraft.server.level.ServerPlayer fahrerOhneMod() {
         //? if >=1.21.6 {
-        if (!level().isClientSide() && chauffeur() == null && getFirstPassenger() instanceof net.minecraft.server.level.ServerPlayer sp
+        if (!level().isClientSide() && fahrenderButler() == null && spielerAmSteuer() instanceof net.minecraft.server.level.ServerPlayer sp
                 && !de.moinmornhart.stinkendreich.netz.ModErkennung.hatMod(sp)) {
             return sp;
         }
@@ -243,7 +262,7 @@ public class AutoEntity extends Mob {
 
     /** Fährt gerade der Butler? */
     public boolean chauffeurFaehrt() {
-        return chauffeur() != null;
+        return fahrenderButler() != null;
     }
 
     /** Eingaben des Chauffeurs für den nächsten Tick (siehe {@code butler.Chauffeur}). */
@@ -275,8 +294,25 @@ public class AutoEntity extends Mob {
     @Override
     protected Vec3 getPassengerAttachmentPoint(Entity passagier, EntityDimensions masse, float skala) {
         int index = Math.max(0, getPassengers().indexOf(passagier));
-        Entity butler = chauffeur();
-        if (butler != null) {
+        Entity butler = fahrenderButler();
+        Player fahrer = butler == null ? spielerAmSteuer() : null;
+        if (fahrer != null && getPassengers().get(0) != fahrer) {
+            // Spieler steuert, saß aber nicht als Erster drin (James stieg vorher ein): Fahrer auf Platz 0, die anderen dahinter
+            if (passagier == fahrer) {
+                index = 0;
+            } else {
+                int vor = 0;
+                for (Entity e : getPassengers()) {
+                    if (e == passagier) {
+                        break;
+                    }
+                    if (e != fahrer) {
+                        vor++;
+                    }
+                }
+                index = vor + 1;
+            }
+        } else if (butler != null) {
             if (passagier == butler) {
                 index = 0;
             } else {
@@ -451,19 +487,14 @@ public class AutoEntity extends Mob {
 
     /** James holt den Wagen mit dem Hubschrauber ab und stellt ihn in die Garage. */
     public void heimBringen(net.minecraft.server.level.ServerPlayer p) {
-        de.moinmornhart.stinkendreich.butler.ButlerEntity b = de.moinmornhart.stinkendreich.butler.ButlerVerwaltung.vonSpieler(p);
-        if (b == null) {
-            de.moinmornhart.stinkendreich.butler.ButlerVerwaltung.rufen(p);
-            b = de.moinmornhart.stinkendreich.butler.ButlerVerwaltung.vonSpieler(p);
-        }
-        if (b == null) {
-            return;
-        }
-        if (getPassengers().contains(b)) {
-            b.stopRiding();
-        }
-        b.neueAuftraege(List.of(new de.moinmornhart.stinkendreich.butler.auftrag.AbschleppAuftrag(getUUID())));
-        b.sagen(net.minecraft.network.chat.Component.translatable("stinkendreich.butler.abschleppen.los"));
+        // Ist James gerade nicht geladen, bekommt er den Auftrag, sobald er da ist
+        de.moinmornhart.stinkendreich.butler.ButlerVerwaltung.mitButler(p, b -> {
+            if (getPassengers().contains(b)) {
+                b.stopRiding();
+            }
+            b.neueAuftraege(List.of(new de.moinmornhart.stinkendreich.butler.auftrag.AbschleppAuftrag(getUUID())));
+            b.sagen(net.minecraft.network.chat.Component.translatable("stinkendreich.butler.abschleppen.los"));
+        });
     }
 
     /** Wieder zum Gegenstand machen; der Inhalt des Kofferraums fällt heraus. */

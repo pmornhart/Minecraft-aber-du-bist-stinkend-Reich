@@ -59,8 +59,10 @@ public final class Strassennetz {
     private StrassenBau bau;
     /** Treppe vom Straßenende hinunter ins Ziel (Mine, Endportal, Netherportal), die gerade entsteht. */
     private Treppenbau treppe;
-    /** Fertige Treppen dieser Sitzung je Ziel („mine“, „endportal“ …), nur für die Testhilfe /butler treppenblick. */
+    /** Fertige Treppen je Ziel („mine“, „endportal“ …): für den Treppenwart und die Testhilfen (gespeichert im JSON). */
     private final Map<String, Treppenbau> gebauteTreppen = new java.util.HashMap<>();
+    /** Gespeicherte Treppen aus dem JSON; werden beim ersten Tick mit Welt zu {@link #gebauteTreppen}. */
+    private final List<JsonObject> treppenPlaene = new ArrayList<>();
     /** Straßen, deren Treppe fertig ist (oder die keine brauchen). */
     private final java.util.Set<String> treppenFertig = new java.util.HashSet<>();
 
@@ -88,6 +90,7 @@ public final class Strassennetz {
                 }
                 if (s.getTickCount() % Strassenkehrer.ALLE == 0) {
                     aktuell.kehren();
+                    aktuell.treppenPflegen();
                     aktuell.wegweiserPruefen();
                 }
             }
@@ -280,6 +283,8 @@ public final class Strassennetz {
         strassen.clear();
         treppe = null;
         treppenFertig.clear();
+        gebauteTreppen.clear();
+        treppenPlaene.clear();
         if (bau != null) {
             bau.freigeben();
         }
@@ -409,11 +414,63 @@ public final class Strassennetz {
         for (Strasse st : strassen) {
             String art = Wegweiser.festesZiel(st.name());
             if (art != null && !art.equals("dorf") && !treppenFertig.contains(st.name() + "@" + Treppenbau.STIL) && !st.punkte().isEmpty()) {
-                treppe = new Treppenbau(server.overworld(), st.name(), art, st.ende());
+                treppe = new Treppenbau(server.overworld(), st.name(), art, st.ende(), endRichtung(st));
                 return true;
             }
         }
         return false;
+    }
+
+    /** Richtung der Straße an ihrem Ende (0 = Norden, 1 = Osten, 2 = Süden, 3 = Westen), −1 bei sehr kurzen Straßen. */
+    private static int endRichtung(Strasse st) {
+        List<BlockPos> p = st.punkte();
+        if (p.size() < 2) {
+            return -1;
+        }
+        BlockPos e = p.get(p.size() - 1), v = p.get(Math.max(0, p.size() - 4));
+        int dx = e.getX() - v.getX(), dz = e.getZ() - v.getZ();
+        if (dx == 0 && dz == 0) {
+            return -1;
+        }
+        return Math.abs(dx) >= Math.abs(dz) ? (dx > 0 ? 1 : 3) : (dz > 0 ? 2 : 0);
+    }
+
+    /** Treppenwart: hält die fertigen Treppen in Spielernähe frei und trocken (siehe {@link Treppenbau#pflegen}). */
+    private void treppenPflegen() {
+        treppenPflegenLaden();
+        for (Treppenbau t : gebauteTreppen.values()) {
+            if (t.spielerNahe(64)) {
+                int n = t.pflegen();
+                if (n > 0) {
+                    StinkendReich.LOGGER.info("Treppenwart: {} Stellen an der Treppe zu „{}“ freigeräumt/abgedichtet", n, t.name);
+                }
+            }
+        }
+    }
+
+    /** Testhilfe und Hilfe für Spieler: Prüfung aller fertigen Treppen (siehe {@link Treppenbau#pruefen}). */
+    public List<String> treppenPruefen() {
+        treppenPflegenLaden();
+        List<String> l = new ArrayList<>();
+        gebauteTreppen.values().forEach(t -> l.add(t.name + ": " + t.pruefen()));
+        if (l.isEmpty()) {
+            l.add(treppe != null ? "Treppe zu „" + treppe.name + "“ entsteht gerade" : "keine Treppe gebaut");
+        }
+        return l;
+    }
+
+    private void treppenPflegenLaden() {
+        if (!treppenPlaene.isEmpty()) {
+            for (JsonObject j : treppenPlaene) {
+                try {
+                    Treppenbau t = Treppenbau.ausJson(server.overworld(), j);
+                    gebauteTreppen.putIfAbsent(t.art, t);
+                } catch (Exception ex) {
+                    StinkendReich.LOGGER.warn("Treppe im Straßennetz nicht lesbar: {}", ex.toString());
+                }
+            }
+            treppenPlaene.clear();
+        }
     }
 
     private void treppeTick() {
@@ -423,7 +480,9 @@ public final class Strassennetz {
         treppe.tick();
         if (treppe.fertig()) {
             treppenFertig.add(treppe.name + "@" + Treppenbau.STIL);
-            gebauteTreppen.put(treppe.art, treppe);
+            if (treppe.gebaut()) {
+                gebauteTreppen.put(treppe.art, treppe);
+            }
             treppe = null;
             speichern();
         }
@@ -642,6 +701,7 @@ public final class Strassennetz {
 
     /** Testhilfe: Standort und Blickpunkt auf der zuletzt gebauten Treppe (siehe {@link Treppenbau#blick}). */
     public double[] treppenBlick(String art, double anteil) {
+        treppenPflegenLaden();
         Treppenbau t = gebauteTreppen.get(art);
         return t == null ? null : t.blick(anteil);
     }
@@ -713,6 +773,9 @@ public final class Strassennetz {
                 if (j.has("treppen")) {
                     j.getAsJsonArray("treppen").forEach(t -> n.treppenFertig.add(t.getAsString()));
                 }
+                if (j.has("treppenplaene")) {
+                    j.getAsJsonArray("treppenplaene").forEach(t -> n.treppenPlaene.add(t.getAsJsonObject()));
+                }
             }
         } catch (Exception ex) {
             StinkendReich.LOGGER.warn("Straßennetz nicht lesbar: {}", ex.toString());
@@ -739,6 +802,15 @@ public final class Strassennetz {
         JsonArray treppen = new JsonArray();
         treppenFertig.forEach(treppen::add);
         j.add("treppen", treppen);
+        JsonArray plaene = new JsonArray();
+        gebauteTreppen.values().forEach(t -> {
+            JsonObject o = t.alsJson();
+            if (o != null) {
+                plaene.add(o);
+            }
+        });
+        treppenPlaene.forEach(plaene::add);
+        j.add("treppenplaene", plaene);
         try {
             Files.writeString(pfad, GSON.toJson(j), StandardCharsets.UTF_8);
         } catch (Exception ex) {

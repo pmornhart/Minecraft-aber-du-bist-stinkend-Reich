@@ -43,7 +43,7 @@ public class FallenplatteBlock extends MechanikBlock {
         VillaZustand z = VillaZustand.fuer(server.getServer(), pos);
         MechanikBlockEntity daten = daten(welt, pos);
         long jetzt = welt.getGameTime();
-        if (z.stufe() < 1 || !z.istEindringling(spieler) || z.tresorEntschaerft() || daten == null
+        if (!SmartHome.wahl(z, "fallen", z.stufe() >= 1) || !z.istEindringling(spieler) || z.tresorEntschaerft() || daten == null
                 || jetzt - daten.zahl("zuletzt", -1000) < 100) {
             return;
         }
