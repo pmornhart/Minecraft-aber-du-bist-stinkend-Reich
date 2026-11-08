@@ -140,7 +140,7 @@ public class AbschleppAuftrag extends Auftrag {
                             net.minecraft.sounds.SoundSource.NEUTRAL, 1.0F, 1.0F);
                     VillaPlatzierung.VillaInfo villa = heimVilla(butler);
                     pilot = new Pilot(villa != null ? Vec3.atBottomCenterOf(villa.landeplatz()) : heli.position().add(0, 0, 20));
-                    ServerPlayerNachricht.an(butler, Component.translatable("stinkendreich.butler.abschleppen.da"));
+                    de.moinmornhart.stinkendreich.handy.Handy.nachricht(butler.besitzerOnline(), Component.translatable("stinkendreich.butler.abschleppen.da"));
                     melden("Wagen abgesetzt vor der Haustür bei " + wagen.blockPosition().toShortString());
                     wechseln(Phase.LANDEN);
                 }
@@ -224,16 +224,6 @@ public class AbschleppAuftrag extends Auftrag {
             return new AbschleppAuftrag(UUID.fromString(text(j, "wagen", "")));
         } catch (IllegalArgumentException e) {
             return null;
-        }
-    }
-
-    /** Kleine Hilfe: Meldung an den Herrn des Butlers (über der Schnellleiste), falls er online ist. */
-    private static final class ServerPlayerNachricht {
-        static void an(ButlerEntity butler, Component text) {
-            var herr = butler.besitzerOnline();
-            if (herr != null) {
-                Kompat.nachricht(herr, text, false);
-            }
         }
     }
 }

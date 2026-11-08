@@ -212,7 +212,7 @@
   "stinkendreich.bruecke.schon_draussen": "The drawbridge is already extended.",
   "stinkendreich.bruecke.schon_drin": "The drawbridge is already retracted.",
   "stinkendreich.bruecke.zu_weit": "The drawbridge is too far away.",
-  "stinkendreich.butler.abschleppen.da": "The car is back in the garage, sir.",
+  "stinkendreich.butler.abschleppen.da": "The car is parked at the front door, sir.",
   "stinkendreich.butler.abschleppen.los": "Very well, sir. I will fetch the car by helicopter and park it in the garage.",
   "stinkendreich.butler.abschleppen.weg": "I can no longer find the car, sir.",
   "stinkendreich.butler.bitteschoen": "Here you are: %s × %s.",
@@ -749,5 +749,7 @@
   "stinkendreich.handy.sh.modus.aus": "Off",
   "stinkendreich.smarthome.anlage.auto": "%s now follow the alarm level.",
   "stinkendreich.smarthome.anlage.an": "%s are now switched on.",
-  "stinkendreich.smarthome.anlage.aus": "%s are now switched off."
+  "stinkendreich.smarthome.anlage.aus": "%s are now switched off.",
+  "stinkendreich.handy.nachricht.von": "James:",
+  "stinkendreich.butler.geparkt": "The car is parked in the garage, sir."
 }

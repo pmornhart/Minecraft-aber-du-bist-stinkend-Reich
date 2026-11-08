@@ -18,5 +18,6 @@
   - Abwehrgeschütze, Laser, Bewegungsmelder, Sirenen, Landminen und Tresorfallen einzeln auf Auto, An oder Aus stellen. Die Geschütze gehen so auch ohne Festung an.
   - Auch für Freunde ohne Mod.
 - **Abschleppen:** James setzt den abgeschleppten Wagen mit dem Hubschrauber vor der Haustür auf dem roten Teppich ab.
+- **Nachricht aufs Handy:** Hat James den Wagen abgestellt (vor der Haustür oder in der Garage), bekommst du eine Nachricht mit Klingelton aufs goldene Handy, egal wo du gerade bist.
 
 Ältere Neuigkeiten stehen bei den früheren Releases.

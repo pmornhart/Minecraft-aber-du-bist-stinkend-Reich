@@ -273,8 +273,9 @@ public class FahrAuftrag extends Auftrag {
         // Erst nach dem Tick (nicht mitten im Fahrzeug-Tick)
         butler.welt().getServer().execute(() -> {
             butler.stopRiding();
-            if (!wagen.isRemoved()) {
-                Garage.einparken(butler.welt(), wagen, herr);
+            if (!wagen.isRemoved() && Garage.einparken(butler.welt(), wagen, herr)) {
+                de.moinmornhart.stinkendreich.handy.Handy.nachricht(butler.besitzerOnline(),
+                        net.minecraft.network.chat.Component.translatable("stinkendreich.butler.geparkt"));
             }
             butler.teleportiereNahe(butler.heimat());
         });

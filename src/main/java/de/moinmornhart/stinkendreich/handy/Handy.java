@@ -50,6 +50,21 @@ public final class Handy {
     private Handy() {
     }
 
+    /**
+     * Nachricht von James aufs goldene Handy (Philip, 08.11.: „dass ich noch eine Nachricht bekomme auf meinem Handy,
+     * wenn James den Wagen abgestellt hat“): Zeile im Chat mit Handy-Symbol und ein Klingelton, egal wo du gerade bist.
+     */
+    public static void nachricht(ServerPlayer p, Component text) {
+        if (p == null) {
+            return;
+        }
+        Kompat.nachricht(p, Component.literal("📱 ").withStyle(ChatFormatting.GOLD)
+                .append(Component.translatable("stinkendreich.handy.nachricht.von").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD))
+                .append(Component.literal(" ")).append(text.copy().withStyle(ChatFormatting.WHITE)), false);
+        p.level().playSound(null, p.blockPosition(), SoundEvents.NOTE_BLOCK_CHIME.value(), SoundSource.PLAYERS, 0.9F, 1.8F);
+        p.level().playSound(null, p.blockPosition(), SoundEvents.NOTE_BLOCK_BELL.value(), SoundSource.PLAYERS, 0.7F, 1.2F);
+    }
+
     public static void registrieren() {
         Netz.bearbeiter("handy", 0, (spieler, pos, wert) -> ausfuehren(spieler, wert));
         // Dasselbe als Befehl, für Spieler ohne Mod (die Knöpfe des Handy-Dialogs, siehe server/HandyDialog)

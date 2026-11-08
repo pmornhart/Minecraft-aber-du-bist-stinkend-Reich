@@ -1,6 +1,6 @@
 # Stand (Übergabe)
 
-_Zuletzt aktualisiert: 2026-11-07, 17:40 Uhr (Runde 0.4.8: Philips Bilder, Autoschlüssel, Abschleppen per Heli, Treppen ins Ziel, eine .jar für alle Versionen)_
+_Zuletzt aktualisiert: 2026-11-08, 15:40 Uhr (Runde 0.5.0: Treppen neu, Butler überarbeitet, Sicherheit übers Handy, Leertaste im Hubschrauber)_
 
 **Philips feste Regel (26.10., mehrfach gesagt; 27.10. ernst gemeint – „sonst wechsle ich zu Codex“):** Die Fortschrittsseite nach JEDEM Zwischenschritt neu
 veröffentlichen (jede Gruppe Bilder, jedes fertige Feature, jeder Test) – ohne dass er es sagen muss.
@@ -798,6 +798,26 @@ Werkzeug: `scratchpad/seite_daten.py` anpassen, `seite_neu.py seite_daten.json`,
   sie an, `UpdatePruefer` bietet bei `stinkendreich_alle` wieder „+alle.jar“ an.
 - Paper-Reste entfernt (Szenarien trailer5b/trailer6, Kommentare). Tests: `runde048.txt` (Nachrüstung, mit alter villa.nbt),
   `runde048b.txt`, `runde048c.txt`.
+
+## Runde 0.5.0 (08.11.)
+
+- **Treppen neu** (`strasse/TreppenPlan` ohne Minecraft, Test `tools/treppen_plan_test.sh`: 20.000 Zufallsziele): 3 breit, Absatz
+  vor und nach jeder Ecke (sonst ragt der neue Gang in den Boden der vorletzten Stufe), kein Zickzack, keine 180°-Wende,
+  zuerst 4 Stufen in Straßenrichtung. `Treppenbau` in Phasen SUCHEN, HUELLE, RAEUMEN, DICHTEN (26 Nachbarn: Flüssigkeit,
+  Löcher, Sand, Pflanzen, Naturblöcke → Quarz; am Ziel/Straßenende und am offenen Himmel bleibt Luft), SCHMUCK; `pruefen()`
+  (versperrt, ohne Boden, ohne Marmor, Wasser, Ziel). Treppenwart `pflegen()` in Spielernähe, Pläne als `treppenplaene` im
+  Straßennetz-JSON, `STIL` 3. Befehl `/butler treppenpruefen`. Test `treppe050.txt` (Mine 97, Endportal 55 Stufen OK).
+- **Butler:** Chunk-Halten 3 × 3 per `setChunkForced`, jeden Tick nachgeführt (`updateChunkForced` ließ Figuren nicht ticken;
+  ein einzelner Chunk reichte nicht, nach Teleport stand er im Nachbarchunk still). `ButlerVerwaltung.mitButler` (Aufträge
+  warten auf einen nicht geladenen James; Ruf mit `danach`, kein doppelter Ruf, 15 s + Warten auf Figuren), Handy ohne
+  NACHHOLEN, `ArbeitsZiel` ohne JUMP, `AnrufAuftrag` zählt als Fahrt, Folgen/Bleiben, eigene Villa (`Umgebung.eigeneVilla`),
+  Ofen speichert Phase, Sprache vor Claude. Testprotokoll „Autotest: James bei …“. Test `ferne050.txt` (700 Blöcke weg).
+- **Fahrzeuge:** Synchronisiertes `AM_STEUER`; `AutoEntity.fahrenderButler()` – ohne Auftrag steuert der Spieler (Leertaste im
+  Hubschrauber, Philip 08.11.). Test `heli050.txt`.
+- **Sicherheit übers Handy:** `SmartHome.ANLAGEN`/`wahl()` (Smart-Marken `anlage_<name>` = auto/an/aus), Seite SICHERHEIT
+  (`HandyBildschirm`, `HandyDialog`), Stufe 0–4 (auch Festung) und Alarm aus, nur Eigentümer.
+- **Abschleppen:** Phase ABSETZEN auf dem Teppich vor der Haustür (`FahrAuftrag.vorDerTuer`), Nachricht aufs Handy
+  (`Handy.nachricht`, auch beim Einparken in der Garage).
 
 ## Paper-Plugin entfernt (30.10., Philip: „lösch mal den Paper-Zeug, also das Plugin, nur Mod“)
 

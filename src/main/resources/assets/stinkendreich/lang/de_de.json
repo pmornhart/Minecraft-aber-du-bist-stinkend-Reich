@@ -212,7 +212,7 @@
   "stinkendreich.bruecke.schon_draussen": "Die Zugbrücke ist schon ausgefahren.",
   "stinkendreich.bruecke.schon_drin": "Die Zugbrücke ist schon eingefahren.",
   "stinkendreich.bruecke.zu_weit": "Die Zugbrücke ist zu weit weg.",
-  "stinkendreich.butler.abschleppen.da": "Der Wagen steht wieder in der Garage, Sir.",
+  "stinkendreich.butler.abschleppen.da": "Der Wagen steht vor der Haustür, Sir.",
   "stinkendreich.butler.abschleppen.los": "Sehr wohl, Sir. Ich hole den Wagen mit dem Hubschrauber ab und bringe ihn in die Garage.",
   "stinkendreich.butler.abschleppen.weg": "Ich finde den Wagen nicht mehr, Sir.",
   "stinkendreich.butler.bitteschoen": "Bitte sehr: %s × %s.",
@@ -749,5 +749,7 @@
   "stinkendreich.handy.sh.modus.aus": "Aus",
   "stinkendreich.smarthome.anlage.auto": "%s folgen jetzt der Alarmstufe.",
   "stinkendreich.smarthome.anlage.an": "%s sind jetzt eingeschaltet.",
-  "stinkendreich.smarthome.anlage.aus": "%s sind jetzt ausgeschaltet."
+  "stinkendreich.smarthome.anlage.aus": "%s sind jetzt ausgeschaltet.",
+  "stinkendreich.handy.nachricht.von": "James:",
+  "stinkendreich.butler.geparkt": "Der Wagen steht in der Garage, Sir."
 }
