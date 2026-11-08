@@ -114,7 +114,9 @@ public class AbschleppAuftrag extends Auftrag {
                 pilot.fliegen(heli);
                 anSeil();
                 double rest = Math.hypot(pilot.ziel().x - heli.getX(), pilot.ziel().z - heli.getZ());
-                if (rest < 6 || phasenTicks > 20 * 60 * 5) {
+                // Ab 20 Blöcken übernimmt ABSETZEN (schwebt weich genau über den Teppich) – der Pilot selbst landet nahe Häusern
+                // auf einem freien Platz bis 16 Blöcke daneben und kam so nie nah genug heran
+                if (rest < 20 || phasenTicks > 20 * 60 * 5) {
                     absetzStart = heli.position();
                     wechseln(Phase.ABSETZEN);
                 }
@@ -123,7 +125,7 @@ public class AbschleppAuftrag extends Auftrag {
                 // Über dem Teppich einschweben und sinken, bis der Wagen auf dem Boden steht (4 Sekunden), dann ausklinken
                 Vec3 ort = pilot.ziel();
                 Vec3 ueber = new Vec3(ort.x, ort.y + wagen.getBbHeight() + SEIL, ort.z);
-                double t = Math.min(1.0, phasenTicks / 80.0);
+                double t = Math.min(1.0, phasenTicks / 100.0);
                 t = t * t * (3 - 2 * t);
                 Vec3 neu = absetzStart.lerp(ueber, t);
                 heli.chauffeurEingabe(0, 0, 0);
@@ -131,7 +133,7 @@ public class AbschleppAuftrag extends Auftrag {
                 float gier = heli.getYRot() + net.minecraft.util.Mth.wrapDegrees(0.0F - heli.getYRot()) * 0.08F;
                 Kompat.versetzen(heli, neu.x, neu.y, neu.z, gier, 0.0F);
                 anSeil();
-                if (phasenTicks >= 90) {
+                if (phasenTicks >= 110) {
                     wagen.setNoGravity(false);
                     Kompat.versetzen(wagen, ort.x, ort.y, ort.z, 0.0F, 0.0F);
                     wagen.setYBodyRot(0.0F);
