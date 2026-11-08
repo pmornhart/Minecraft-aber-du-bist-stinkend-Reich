@@ -31,7 +31,7 @@
 <img src="docs/bilder/villa_drohne.jpg" alt="Die Villa aus der Luft" width="100%">
 
 <a href="docs/trailer.mp4"><img src="docs/bilder/trailer.jpg" alt="Trailer ansehen (17 Minuten, echtes Minecraft, neue Skins, Freunde in deiner Welt, Bodyguards im Einsatz, Straßen zu allen Freunden, die neuen Autos aus 0.4.3, Wegweiser und Navi aus 0.4.7, Autoschlüssel und Abschleppdienst per Hubschrauber aus 0.4.8)" width="100%"></a>
-<p align="center"><sub>▶️ Trailer ansehen: Villa, Flügel, Esszimmer, Fernseher mit Video und Fernbedienung, Butler, Straßen, Hubschrauber, Handy mit Navi, Bodyguards, Agenten-Ausrüstung, James als Chauffeur über die Abzweige von Villa zu Villa und am Ende (Neu in 0.4.8) Unterwasser-Bar, Autoschlüssel mit Automenü, James schleppt die Limo mit dem Hubschrauber heim, Abholung aus der Luft und die Treppe in die Mine</sub></p>
+<p align="center"><sub>▶️ Trailer ansehen: Villa, Flügel, Esszimmer, Fernseher mit Video und Fernbedienung, Butler, Straßen, Hubschrauber, Handy mit Navi, Bodyguards, Agenten-Ausrüstung, James als Chauffeur über die Abzweige von Villa zu Villa und am Ende (Neu in 0.4.8) Unterwasser-Bar, Autoschlüssel mit Automenü, James schleppt die Limo mit dem Hubschrauber heim, Abholung aus der Luft und die Treppe in die Mine, zuletzt (Neu in 0.5.0) die neue Treppe bis ganz hinunter, Abwehrgeschütze per Handy und die abgeschleppte Limo vor der Haustür</sub></p>
 
 ## 🏛️ Die Villa
 

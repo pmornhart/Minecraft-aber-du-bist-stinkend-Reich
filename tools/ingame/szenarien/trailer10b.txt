@@ -1,0 +1,21 @@
+# Trailer Teil 10, Nachdreh b: Abwehrgeschütze per Handy, Kamera nah an Mauer und Gegnern.
+# Aufruf: SICHTWEITE=12 tools/ingame/test.sh 26.3 tools/ingame/szenarien/trailer10b.txt
+server /gamemode creative
+server /time set 6000
+server /weather clear
+server /gamerule advance_time false
+warte 30
+server /item replace entity @p weapon.mainhand with stinkendreich:handy
+server /handy smart|anlage|geschuetze:an
+server /gamemode spectator @p
+taste F1
+server /tp @p -68 99 -16 facing -45 93 -8
+warte 6
+bild tb01_blick
+video start trailer10b
+kapitel Sicherheit im Handy: Abwehrgeschütze auf Knopfdruck
+server /summon minecraft:vindicator -54.5 92 -8.5 {PersistenceRequired:1b}
+server /summon minecraft:vindicator -56.5 92 -4.5 {PersistenceRequired:1b}
+server /summon minecraft:vindicator -55.5 92 -12.5 {PersistenceRequired:1b}
+warte 12
+video stopp
