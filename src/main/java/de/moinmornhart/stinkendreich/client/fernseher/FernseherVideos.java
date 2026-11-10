@@ -32,7 +32,11 @@ public final class FernseherVideos {
     /** Fehler je Video und Stelle nur einmal im Chat melden. */
     private static final Set<String> GEMELDET = new HashSet<>();
     private static int takt;
-    /** Schon als bereit gemeldet: „Fernseher-ID@Wartestelle“. */
+    /**
+     * Schon als bereit gemeldet: „Fernseher-ID@Video@Wartestelle“. Wird gelöscht, sobald der Fernseher nicht mehr wartet –
+     * vorher blieb „Fernseher@0“ stehen, und beim nächsten Video ab Anfang meldete sich niemand mehr bereit: Der Fernseher
+     * wartete jedes Mal 45 Sekunden (Philip, 10.11.: „gemeinsam YouTube schauen geht nicht“).
+     */
     private static final Set<String> GEMELDET_BEREIT = new HashSet<>();
 
     private FernseherVideos() {
@@ -92,6 +96,22 @@ public final class FernseherVideos {
                     }
                     continue;
                 }
+                if (!tv.wartet()) {
+                    String vorn = tv.getId() + "@";
+                    GEMELDET_BEREIT.removeIf(k -> k.startsWith(vorn));
+                }
+                if (tv.wartet() && !bereit) {
+                    // Hier kann das Video (noch) nicht laufen (Hilfsprogramme fehlen oder laden gerade): trotzdem „bereit“
+                    // melden, damit die anderen nicht 45 Sekunden auf diesen Rechner warten
+                    long stelle = tv.positionTicks(0);
+                    if (GEMELDET_BEREIT.add(tv.getId() + "@" + tv.video() + "@" + stelle)) {
+                        KompatClient.sende("fernseherbereit", tv.blockPosition(), tv.getId() + "|" + stelle);
+                    }
+                    if (tv.distanceToSqr(mc.player) < 16 * 16 && (naechster == null || tv.distanceToSqr(mc.player) < naechster.distanceToSqr(mc.player))) {
+                        naechster = tv;
+                    }
+                    continue;
+                }
                 if (tv.wartet() && bereit) {
                     // Gemeinsam schauen: an der Startstelle vorladen, anhalten und dem Server „bereit“ melden
                     long stelle = tv.positionTicks(0);
@@ -100,7 +120,10 @@ public final class FernseherVideos {
                         p.halten = true;
                         ersetzen(tv.getId(), p);
                     }
-                    if (p.startbereit() && GEMELDET_BEREIT.add(tv.getId() + "@" + stelle)) {
+                    // Bereit, sobald das Video an der Stelle geladen ist – oder wenn es hier gar nicht lädt (Fehler):
+                    // dann wenigstens die anderen nicht aufhalten
+                    boolean fertig = p.startbereit() || p.zustand() == VideoAbspieler.Zustand.FEHLER;
+                    if (fertig && GEMELDET_BEREIT.add(tv.getId() + "@" + tv.video() + "@" + stelle)) {
                         KompatClient.sende("fernseherbereit", tv.blockPosition(), tv.getId() + "|" + stelle);
                     }
                     aktiv.add(tv.getId());

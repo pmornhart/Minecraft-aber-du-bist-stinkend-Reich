@@ -28,3 +28,12 @@ warte 4
 bild f02_beide_laufen
 warte 6
 bild f03_spaeter
+# Zweiter Start (10.11.): Stopp und dasselbe Video nochmal von vorn – vorher meldete sich keiner mehr bereit, 45 s Wartezeit
+warte 4
+server /execute as Philip at @s run villa fernseher !stopp
+warte 3
+merke
+server /execute as Philip at @s run villa fernseher !abspielen|aqz-KE-bpKQ
+bis 70 Fernseher: Start für
+warte 4
+bild f04_zweiter_start

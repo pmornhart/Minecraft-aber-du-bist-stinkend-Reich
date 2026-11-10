@@ -829,6 +829,8 @@ Werkzeug: `scratchpad/seite_daten.py` anpassen, `seite_neu.py seite_daten.json`,
 
 ## Nächster Schritt
 
+**0.5.1 in Arbeit (10.11., noch kein Release):** Gemeinsam fernsehen – Bereit-Meldung hing an „Fernseher@Stelle“ und wurde nie gelöscht (zweiter Start ab 0 → 45 s Warten); jetzt „Fernseher@Video@Stelle“, gelöscht sobald der Fernseher nicht wartet; Clients ohne Hilfsprogramme oder mit Ladefehler melden trotzdem bereit (`FernseherVideos`). Test `lan_fernseher.txt` mit zweitem Start (beide Starts nach 10 s = künstliche Verzögerung von Max). Dazu Abschleppen: ABSETZEN ab 20 Blöcken. Philips Bild vom 10.11. (steile Straße im Dschungel bei −13/435): Rückfrage offen, was ihn stört.
+
 **Release 0.5.0 veröffentlicht** (08.11. 15:39 nach Philips „naus“, Lauf 42495082192, 17 Dateien + +alle.jar: https://github.com/pmornhart/Minecraft-aber-du-bist-stinkend-Reich/releases/tag/v0.5.0). Offen: Trailer-Teil 10 (Treppen, Sicherheit, Abschleppen), Philips Test in seiner Welt (Treppen werden mit STIL 3 neu gebaut).
 
 **Release 0.4.9 veröffentlicht** (07.11. 20:00 nach Philips „auf auf“, Lauf 42403170224, 17 Dateien + +alle.jar: https://github.com/pmornhart/Minecraft-aber-du-bist-stinkend-Reich/releases/tag/v0.4.9): Luxus-Treppen (Quarz/Gold, `Treppenbau.STIL` 2 überbaut alte), Bodyguards fahren mit (`BodyguardEntity.mitfahren`, schießen aus dem Wagen, kein Nahkampf als Mitfahrer), Heimfahrt bis vor die Haustür (`FahrAuftrag.vorDerTuer`, `umfahren` außen ums Grundstück, Heimweg zur Garage über den Teppich). Tests `treppe049.txt`, `runde049.txt`; Testhilfe `/butler treppenblick <ziel> <anteil>`.
